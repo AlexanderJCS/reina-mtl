@@ -5,7 +5,6 @@
 #include <QuartzCore/CAMetalLayer.hpp>
 #include <simd/simd.h>
 
-// Forward declarations to avoid exposing Objective-C types in a C++ header.
 namespace MTL { class Device; class Buffer; }
 
 class Model {

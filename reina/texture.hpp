@@ -5,10 +5,12 @@
 class Texture {
 public:
     Texture(const char* filepath, MTL::Device* metalDevice);
+    Texture(MTL::Device* device, int width, int height, int channels, MTL::PixelFormat pixelFormat);
     ~Texture();
+    
     MTL::Texture* texture;
     int width, height, channels;
-
+    
 private:
-    MTL::Device* device;
+    void init(MTL::Device* device, MTL::PixelFormat pixelFormat);
 };
