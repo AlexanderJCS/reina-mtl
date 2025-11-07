@@ -11,6 +11,10 @@ class Model {
 public:
     explicit Model(MTL::Device* device);
 
+    [[nodiscard]] MTL::Buffer* getVertexBuffer() const;
+    [[nodiscard]] MTL::Buffer* getIndexBuffer() const;
+    [[nodiscard]] int getTriangleCount() const;
+    
 private:
     MTL::Buffer* vertexBuffer = nullptr;
     MTL::Buffer* indexBuffer = nullptr;
