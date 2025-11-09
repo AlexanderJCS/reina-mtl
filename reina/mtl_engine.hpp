@@ -29,6 +29,7 @@ public:
     void createDefaultLibrary();
     void createCommandQueue();
     void createRenderPipeline();
+    void createComputePipeline();
 
     void encodeRenderCommand(MTL::RenderCommandEncoder* renderEncoder);
     void sendRenderCommand();
@@ -47,6 +48,7 @@ private:
     CAMetalLayer* metalLayer;
     CA::MetalDrawable* metalDrawable;
 
+    MTL::ComputePipelineState* computePSO;
     MTL::Library* metalDefaultLibrary;
     MTL::CommandQueue* metalCommandQueue;
     MTL::CommandBuffer* metalCommandBuffer;

@@ -8,6 +8,7 @@ void MTLEngine::init() {
     
     createSquare();
     createDefaultLibrary();
+    createComputePipeline();
     createCommandQueue();
     createRenderPipeline();
 }
@@ -79,6 +80,15 @@ void MTLEngine::createDefaultLibrary() {
 
 void MTLEngine::createCommandQueue() {
     metalCommandQueue = metalDevice->newCommandQueue();
+}
+
+void MTLEngine::createComputePipeline() {
+    MTL::Function* computeShader = metalDefaultLibrary->newFunction(NS::String::string("raytraceMain", NS::ASCIIStringEncoding));
+    NS::Error* error = nullptr;
+    computePSO = metalDevice->newComputePipelineState(computeShader, &error);
+    if (error) {
+        printf("Compute pipeline creation error: %s\n", error->localizedDescription()->utf8String());
+    }
 }
 
 void MTLEngine::createRenderPipeline() {
