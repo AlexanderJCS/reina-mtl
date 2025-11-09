@@ -56,17 +56,17 @@ void MTLEngine::initWindow() {
 
 void MTLEngine::createSquare() {
     VertexData squareVertices[] {
-        {{-0.5, -0.5,  0.5, 1.0f}, {0.0f, 0.0f}},
-        {{-0.5,  0.5,  0.5, 1.0f}, {0.0f, 1.0f}},
-        {{ 0.5,  0.5,  0.5, 1.0f}, {1.0f, 1.0f}},
-        {{-0.5, -0.5,  0.5, 1.0f}, {0.0f, 0.0f}},
-        {{ 0.5,  0.5,  0.5, 1.0f}, {1.0f, 1.0f}},
-        {{ 0.5, -0.5,  0.5, 1.0f}, {1.0f, 0.0f}}
+        {{-1.0f, -1.0f,  1.0f, 1.0f}, {0.0f, 0.0f}},
+        {{-1.0f,  1.0f,  1.0f, 1.0f}, {0.0f, 1.0f}},
+        {{ 1.0f,  1.0f,  1.0f, 1.0f}, {1.0f, 1.0f}},
+        {{-1.0f, -1.0f,  1.0f, 1.0f}, {0.0f, 0.0f}},
+        {{ 1.0f,  1.0f,  1.0f, 1.0f}, {1.0f, 1.0f}},
+        {{ 1.0f, -1.0f,  1.0f, 1.0f}, {1.0f, 0.0f}}
     };
 
     squareVertexBuffer = metalDevice->newBuffer(&squareVertices, sizeof(squareVertices), MTL::ResourceStorageModeShared);
 
-    grassTexture = new Texture("assets/mc_grass.jpeg", metalDevice);
+    grassTexture = new Texture("assets/mc_grass.jpeg", metalDevice, MTL::TextureUsageShaderRead | MTL::TextureUsageShaderWrite);
 }
 
 
@@ -112,7 +112,23 @@ void MTLEngine::createRenderPipeline() {
 }
 
 void MTLEngine::draw() {
+    runRaytrace();
     sendRenderCommand();
+}
+
+void MTLEngine::runRaytrace() {
+    MTL::CommandBuffer* commandBuffer = metalCommandQueue->commandBuffer();
+    MTL::ComputeCommandEncoder* encoder = commandBuffer->computeCommandEncoder();
+    encoder->setComputePipelineState(computePSO);
+    encoder->setTexture(grassTexture->texture, 0);
+    encoder->setComputePipelineState(computePSO);
+    MTL::Size gridSize = MTL::Size(grassTexture->width, grassTexture->height, 1);
+    MTL::Size threadgroupSize = MTL::Size(8, 8, 1);
+    encoder->dispatchThreads(gridSize, threadgroupSize);
+
+    encoder->endEncoding();
+    commandBuffer->commit();
+    commandBuffer->waitUntilCompleted();
 }
 
 void MTLEngine::sendRenderCommand() {

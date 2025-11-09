@@ -31,6 +31,7 @@ public:
     void createRenderPipeline();
     void createComputePipeline();
 
+    void runRaytrace();
     void encodeRenderCommand(MTL::RenderCommandEncoder* renderEncoder);
     void sendRenderCommand();
     void draw();
