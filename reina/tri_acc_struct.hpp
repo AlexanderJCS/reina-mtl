@@ -6,7 +6,7 @@
 #include "model.hpp"
 
 class TriangleAccelerationStructure {
-    TriangleAccelerationStructure(MTL::Device* device, const Model& model);
+    TriangleAccelerationStructure(MTL::Device* device, MTL::CommandBuffer* cmdBuffer, const Model& model)
     
 private:
     void compact();

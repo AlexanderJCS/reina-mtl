@@ -7,7 +7,7 @@
 
 #include "tri_acc_struct.hpp"
 
-TriangleAccelerationStructure::TriangleAccelerationStructure(MTL::Device* device, const Model& model) {
+TriangleAccelerationStructure::TriangleAccelerationStructure(MTL::Device* device, MTL::CommandBuffer* cmdBuffer, const Model& model) {
     MTL::AccelerationStructureTriangleGeometryDescriptor* geomDescriptor =
         MTL::AccelerationStructureTriangleGeometryDescriptor::alloc()->init();
     
@@ -24,7 +24,14 @@ TriangleAccelerationStructure::TriangleAccelerationStructure(MTL::Device* device
     
     MTL::AccelerationStructureSizes sizes = device->accelerationStructureSizes(accStructDescriptor);
     MTL::SizeAndAlign heapSize = device->heapAccelerationStructureSizeAndAlign(sizes.accelerationStructureSize);
+
+    MTL::Buffer* asBuffer = device->newBuffer(sizes.accelerationStructureSize, MTL::ResourceStorageModePrivate);
+
+    MTL::AccelerationStructure* accelerationStructure = device->newAccelerationStructure(sizes.accelerationStructureSize);
     
-    MTL::AccelerationStructure accStructure = heap->makeAccelerationStructure(heapSize.size);
-    // https://www.youtube.com/watch?v=ZDb7hgF1JGs 8:41
+    MTL::Buffer* scratchBuffer = device->newBuffer(sizes.buildScratchBufferSize, MTL::StorageModePrivate);
+    
+    MTL::AccelerationStructureCommandEncoder* commandEncoder = cmdBuffer->accelerationStructureCommandEncoder();
+    commandEncoder->buildAccelerationStructure(accelerationStructure, accStructDescriptor, scratchBuffer, 0);
+    commandEncoder->endEncoding();
 }
