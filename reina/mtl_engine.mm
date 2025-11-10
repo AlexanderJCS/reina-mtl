@@ -4,6 +4,8 @@
 
 #include "model.hpp"
 #include "tri_acc_struct.hpp"
+#include "matmath.hpp"
+
 
 void MTLEngine::init() {
     initDevice();
@@ -15,6 +17,7 @@ void MTLEngine::init() {
     createCommandQueue();
     createRenderPipeline();
     createAccStruct();
+    createViewProjMatrix();
 }
 
 void MTLEngine::run() {
@@ -34,6 +37,18 @@ void MTLEngine::cleanup() {
 
 void MTLEngine::initDevice() {
     metalDevice = MTL::CreateSystemDefaultDevice();
+}
+
+void MTLEngine::createViewProjMatrix() {
+    simd::float4x4 proj = makePerspective(1.57f, 800.0f/600.0f, 0.01f, 1e6);
+    simd::float4x4 view = lookAt(simd::float3{0, 0, 0}, simd::float3{0, 0, 1}, simd::float3{0, 1, 0});
+    
+    simd::float4x4 viewProjBufferContents[] = {
+        simd::inverse(view),
+        simd::inverse(proj)
+    };
+    
+    viewProjBuffer = metalDevice->newBuffer(&viewProjBufferContents, sizeof(viewProjBufferContents), MTL::ResourceStorageModeShared);
 }
 
 void MTLEngine::initWindow() {
@@ -135,6 +150,7 @@ void MTLEngine::runRaytrace() {
     encoder->setTexture(grassTexture->texture, 0);
     encoder->setComputePipelineState(computePSO);
     encoder->setAccelerationStructure(accStruct->accelerationStructure, 0);
+    encoder->setBuffer(viewProjBuffer, 0, 1);
     MTL::Size gridSize = MTL::Size(grassTexture->width, grassTexture->height, 1);
     MTL::Size threadgroupSize = MTL::Size(8, 8, 1);
     encoder->dispatchThreads(gridSize, threadgroupSize);

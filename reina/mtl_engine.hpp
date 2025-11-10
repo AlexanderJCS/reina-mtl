@@ -15,6 +15,7 @@
 #include <filesystem>
 
 #include <stb/stb_image.h>
+#include <simd/simd.h>
 
 #include "vertex_data.hpp"
 #include "texture.hpp"
@@ -34,6 +35,7 @@ public:
     void createCommandQueue();
     void createRenderPipeline();
     void createComputePipeline();
+    void createViewProjMatrix();
 
     void runRaytrace();
     void encodeRenderCommand(MTL::RenderCommandEncoder* renderEncoder);
@@ -54,6 +56,7 @@ private:
     CAMetalLayer* metalLayer;
     CA::MetalDrawable* metalDrawable;
 
+    MTL::Buffer* viewProjBuffer;
     MTL::ComputePipelineState* computePSO;
     MTL::Library* metalDefaultLibrary;
     MTL::CommandQueue* metalCommandQueue;
