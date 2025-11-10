@@ -2,6 +2,9 @@
 
 #include <iostream>
 
+#include "model.hpp"
+#include "tri_acc_struct.hpp"
+
 void MTLEngine::init() {
     initDevice();
     initWindow();
@@ -11,6 +14,7 @@ void MTLEngine::init() {
     createComputePipeline();
     createCommandQueue();
     createRenderPipeline();
+    createAccStruct();
 }
 
 void MTLEngine::run() {
@@ -52,6 +56,14 @@ void MTLEngine::initWindow() {
     metalWindow.contentView.wantsLayer = YES;
     metalLayer.drawableSize = CGSizeMake(width, height);
     
+}
+
+void MTLEngine::createAccStruct() {
+    Model model{metalDevice};
+    MTL::CommandBuffer* commandBuffer = metalCommandQueue->commandBuffer();
+    accStruct = std::make_unique<TriangleAccelerationStructure>(metalDevice, commandBuffer, model);
+    commandBuffer->commit();
+    commandBuffer->waitUntilCompleted();
 }
 
 void MTLEngine::createSquare() {
@@ -122,6 +134,7 @@ void MTLEngine::runRaytrace() {
     encoder->setComputePipelineState(computePSO);
     encoder->setTexture(grassTexture->texture, 0);
     encoder->setComputePipelineState(computePSO);
+    encoder->setAccelerationStructure(accStruct->accelerationStructure, 0);
     MTL::Size gridSize = MTL::Size(grassTexture->width, grassTexture->height, 1);
     MTL::Size threadgroupSize = MTL::Size(8, 8, 1);
     encoder->dispatchThreads(gridSize, threadgroupSize);

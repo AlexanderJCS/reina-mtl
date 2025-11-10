@@ -23,13 +23,10 @@ TriangleAccelerationStructure::TriangleAccelerationStructure(MTL::Device* device
     accStructDescriptor->setGeometryDescriptors(geomArray);
     
     MTL::AccelerationStructureSizes sizes = device->accelerationStructureSizes(accStructDescriptor);
-    MTL::SizeAndAlign heapSize = device->heapAccelerationStructureSizeAndAlign(sizes.accelerationStructureSize);
 
-    MTL::Buffer* asBuffer = device->newBuffer(sizes.accelerationStructureSize, MTL::ResourceStorageModePrivate);
-
-    MTL::AccelerationStructure* accelerationStructure = device->newAccelerationStructure(sizes.accelerationStructureSize);
+    accelerationStructure = device->newAccelerationStructure(sizes.accelerationStructureSize);
     
-    MTL::Buffer* scratchBuffer = device->newBuffer(sizes.buildScratchBufferSize, MTL::StorageModePrivate);
+    MTL::Buffer* scratchBuffer = device->newBuffer(sizes.buildScratchBufferSize, MTL::ResourceStorageModePrivate);
     
     MTL::AccelerationStructureCommandEncoder* commandEncoder = cmdBuffer->accelerationStructureCommandEncoder();
     commandEncoder->buildAccelerationStructure(accelerationStructure, accStructDescriptor, scratchBuffer, 0);

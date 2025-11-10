@@ -13,7 +13,7 @@ Model::Model(MTL::Device* device) {
     
     vertexBuffer = device->newBuffer(&vertices, sizeof(vertices), MTL::ResourceStorageModeShared);
     indexBuffer = device->newBuffer(&indices, sizeof(indices), MTL::ResourceStorageModeShared);
-    triangleCount = sizeof(indices) / 3;
+    triangleCount = sizeof(indices) / sizeof(int) / 3;
 }
 
 MTL::Buffer* Model::getVertexBuffer() const {

@@ -18,6 +18,9 @@
 
 #include "vertex_data.hpp"
 #include "texture.hpp"
+#include "tri_acc_struct.hpp"
+
+#include <Metal/Metal.hpp>
 
 class MTLEngine {
 public:
@@ -25,6 +28,7 @@ public:
     void run();
     void cleanup();
     
+    void createAccStruct();
     void createSquare();
     void createDefaultLibrary();
     void createCommandQueue();
@@ -43,6 +47,7 @@ private:
     void initDevice();
     void initWindow();
 
+    std::unique_ptr<TriangleAccelerationStructure> accStruct;
     MTL::Device* metalDevice;
     GLFWwindow* glfwWindow;
     NSWindow* metalWindow;
