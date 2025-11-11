@@ -74,9 +74,9 @@ void MTLEngine::initWindow() {
 }
 
 void MTLEngine::createAccStruct() {
-    Model model{metalDevice};
+    model = std::make_unique<Model>(metalDevice);
     MTL::CommandBuffer* commandBuffer = metalCommandQueue->commandBuffer();
-    accStruct = std::make_unique<TriangleAccelerationStructure>(metalDevice, commandBuffer, model);
+    accStruct = std::make_unique<TriangleAccelerationStructure>(metalDevice, commandBuffer, *model);
     commandBuffer->commit();
     commandBuffer->waitUntilCompleted();
 }
@@ -151,6 +151,8 @@ void MTLEngine::runRaytrace() {
     encoder->setComputePipelineState(computePSO);
     encoder->setAccelerationStructure(accStruct->accelerationStructure, 0);
     encoder->setBuffer(viewProjBuffer, 0, 1);
+    encoder->setBuffer(model->getVertexBuffer(), 0, 2);
+    encoder->setBuffer(model->getIndexBuffer(), 0, 3);
     MTL::Size gridSize = MTL::Size(grassTexture->width, grassTexture->height, 1);
     MTL::Size threadgroupSize = MTL::Size(8, 8, 1);
     encoder->dispatchThreads(gridSize, threadgroupSize);

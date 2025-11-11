@@ -9,7 +9,7 @@ namespace MTL { class Device; class Buffer; }
 
 class Model {
 public:
-    explicit Model(MTL::Device* device);
+    Model(MTL::Device* device);
 
     [[nodiscard]] MTL::Buffer* getVertexBuffer() const;
     [[nodiscard]] MTL::Buffer* getIndexBuffer() const;

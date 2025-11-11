@@ -55,6 +55,7 @@ private:
     NSWindow* metalWindow;
     CAMetalLayer* metalLayer;
     CA::MetalDrawable* metalDrawable;
+    std::unique_ptr<Model> model;
 
     MTL::Buffer* viewProjBuffer;
     MTL::ComputePipelineState* computePSO;

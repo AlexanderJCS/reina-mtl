@@ -51,9 +51,39 @@ ray getStartingRay(
     return ray(newOrigin, newDirection);
 }
 
+struct HitInfo {
+    bool hit;
+    bool backface;
+    float3 pos;
+    float3 normal;
+};
+
+HitInfo intersectScene(ray r, intersector<triangle_data> i, acceleration_structure<> as, constant float* vertices, constant int* indices) {
+    intersection_result<triangle_data> result = i.intersect(r, as);
+    
+    if (result.type != intersection_type::triangle) {
+        return {false, false, float3(0), float3(0)};
+    }
+    
+    float2 bary = result.triangle_barycentric_coord;
+    float3 v0 = vertices[result.primitive_id * 3];
+    float3 v1 = vertices[result.primitive_id * 3 + 1];
+    float3 v2 = vertices[result.primitive_id * 3 + 2];
+    
+    float3 pos = r.origin + r.direction * result.distance;
+    
+    float3 norm = normalize(cross(v1 - v0, v2 - v0));
+    bool backface = dot(norm, r.direction) > 0;
+    norm = faceforward(norm, -r.direction, norm);
+    
+    return {true, backface, pos, norm};
+}
+
 kernel void raytraceMain(
                          acceleration_structure<> as[[buffer(0)]],
                          constant Matrices& matrices [[buffer(1)]],
+                         constant float* vertices [[buffer(2)]],
+                         constant int* indices [[buffer(3)]],
                          texture2d<float, access::write> outTex [[texture(0)]],
                          uint2 gid [[thread_position_in_grid]]
                          ) {
@@ -67,11 +97,12 @@ kernel void raytraceMain(
 
     ray startingRay = getStartingRay(float2(gid), float2(width, height), matrices.invView, matrices.invProjection);
     
-    intersector<> i;
-    intersection_result<> result = i.intersect(startingRay, as);
+    intersector<triangle_data> i;
     
-    if (result.type == intersection_type::triangle) {
-        outTex.write(float4(1.0, 0.0, 0.0, 1.0), gid);
+    HitInfo hit = intersectScene(startingRay, i, as, vertices, indices);
+    
+    if (hit.hit) {
+        outTex.write(float4(hit.normal * 0.5 + 0.5, 1.0), gid);
     } else {
         outTex.write(float4(0.0, 0.0, 0.0, 1.0), gid);
     }
