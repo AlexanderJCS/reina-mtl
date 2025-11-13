@@ -58,17 +58,22 @@ struct HitInfo {
     float3 normal;
 };
 
-HitInfo intersectScene(ray r, intersector<triangle_data> i, acceleration_structure<> as, constant float* vertices, constant int* indices) {
+HitInfo intersectScene(ray r, intersector<triangle_data> i, acceleration_structure<> as, constant packed_float3* vertices, constant int* indices) {
     intersection_result<triangle_data> result = i.intersect(r, as);
     
     if (result.type != intersection_type::triangle) {
         return {false, false, float3(0), float3(0)};
     }
     
-    float2 bary = result.triangle_barycentric_coord;
-    float3 v0 = vertices[result.primitive_id * 3];
-    float3 v1 = vertices[result.primitive_id * 3 + 1];
-    float3 v2 = vertices[result.primitive_id * 3 + 2];
+//    float2 bary = result.triangle_barycentric_coord;
+    
+    int i0 = indices[result.primitive_id * 3];
+    int i1 = indices[result.primitive_id * 3 + 1];
+    int i2 = indices[result.primitive_id * 3 + 2];
+    
+    float3 v0 = vertices[i0];
+    float3 v1 = vertices[i1];
+    float3 v2 = vertices[i2];
     
     float3 pos = r.origin + r.direction * result.distance;
     
@@ -79,14 +84,12 @@ HitInfo intersectScene(ray r, intersector<triangle_data> i, acceleration_structu
     return {true, backface, pos, norm};
 }
 
-kernel void raytraceMain(
-                         acceleration_structure<> as[[buffer(0)]],
+kernel void raytraceMain(acceleration_structure<> as[[buffer(0)]],
                          constant Matrices& matrices [[buffer(1)]],
-                         constant float* vertices [[buffer(2)]],
+                         constant packed_float3* vertices [[buffer(2)]],
                          constant int* indices [[buffer(3)]],
                          texture2d<float, access::write> outTex [[texture(0)]],
-                         uint2 gid [[thread_position_in_grid]]
-                         ) {
+                         uint2 gid [[thread_position_in_grid]]) {
     // Get texture size
     uint width  = outTex.get_width();
     uint height = outTex.get_height();
