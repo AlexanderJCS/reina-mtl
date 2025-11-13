@@ -1,4 +1,5 @@
 #include <metal_stdlib>
+
 using namespace metal;
 using namespace metal::raytracing;
 
@@ -84,29 +85,61 @@ HitInfo intersectScene(ray r, intersector<triangle_data> i, acceleration_structu
     return {true, backface, pos, norm};
 }
 
+float rand(thread uint& seed) {
+    /// Condensed version of pcg_output_rxs_m_xs_32_32, with simple conversion to floating-point [0,1].
+    seed = seed * 747796405 + 1;
+    uint word = ((seed >> ((seed >> 28) + 4)) ^ seed) * 277803737;
+    word = (word >> 22) ^ word;
+    return float(word) / 4294967295.0f;
+}
+
+float3 bsdfSampleDiffuse(float3 n, thread uint& seed) {
+    float theta = 2.0 * M_PI_F * rand(seed);  // Random in [0, 2pi]
+    float u = 2.0 * rand(seed) - 1.0;   // Random in [-1, 1]
+    float r = sqrt(1.0 - u * u);
+    float3 direction = n + float3(r * cos(theta), r * sin(theta), u);
+    
+    return normalize(direction);
+}
+
 kernel void raytraceMain(acceleration_structure<> as[[buffer(0)]],
                          constant Matrices& matrices [[buffer(1)]],
                          constant packed_float3* vertices [[buffer(2)]],
                          constant int* indices [[buffer(3)]],
                          texture2d<float, access::write> outTex [[texture(0)]],
                          uint2 gid [[thread_position_in_grid]]) {
-    // Get texture size
     uint width  = outTex.get_width();
     uint height = outTex.get_height();
 
-    // Check bounds
-    if (gid.x >= width || gid.y >= height)
-        return;
 
-    ray startingRay = getStartingRay(float2(gid), float2(width, height), matrices.invView, matrices.invProjection);
+    if (gid.x >= width || gid.y >= height) {
+        return;
+    }
+
+    uint seed = (height + gid.y) * width + gid.x;
     
     intersector<triangle_data> i;
     
-    HitInfo hit = intersectScene(startingRay, i, as, vertices, indices);
+    ray r = getStartingRay(float2(gid), float2(width, height), matrices.invView, matrices.invProjection);
     
-    if (hit.hit) {
-        outTex.write(float4(hit.normal * 0.5 + 0.5, 1.0), gid);
-    } else {
-        outTex.write(float4(0.0, 0.0, 0.0, 1.0), gid);
+    float3 throughput = float3(1);
+    float3 incomingLight = float3(0);
+    
+    for (int tracedSegments = 0; tracedSegments < 16; tracedSegments++) {
+        HitInfo hit = intersectScene(r, i, as, vertices, indices);
+        
+        if (!hit.hit) {
+            incomingLight += float3(0.4, 0.7, 1.0) * throughput;
+            break;
+        }
+        
+        float3 albedo = float3(0.9, 0.3, 0.2);
+        throughput *= albedo;
+        incomingLight += float3(0) * throughput;
+        
+        r.origin = hit.pos + hit.normal * 0.0001;
+        r.direction = bsdfSampleDiffuse(hit.normal, seed);
     }
+    
+    outTex.write(float4(incomingLight, 1.0), gid.xy);
 }
