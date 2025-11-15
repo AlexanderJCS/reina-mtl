@@ -19,6 +19,7 @@
 
 #include "texture.hpp"
 #include "tri_acc_struct.hpp"
+#include "instance_acc_struct.hpp"
 #include "shared.hpp"
 
 #include <Metal/Metal.hpp>
@@ -30,7 +31,7 @@ public:
     void cleanup();
     
     void createBuffers();
-    void createAccStruct();
+    void createAccStructs();
     void createSquare();
     void createDefaultLibrary();
     void createCommandQueue();
@@ -56,6 +57,8 @@ private:
     int drawableHeight;
     
     std::unique_ptr<TriangleAccelerationStructure> accStruct;
+    std::unique_ptr<InstanceAccelerationStructure> instanceAccStruct;
+    
     MTL::Device* metalDevice;
     GLFWwindow* glfwWindow;
     NSWindow* metalWindow;

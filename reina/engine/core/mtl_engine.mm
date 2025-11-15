@@ -16,7 +16,7 @@ void MTLEngine::init() {
     createComputePipeline();
     createCommandQueue();
     createRenderPipeline();
-    createAccStruct();
+    createAccStructs();
     createBuffers();
 }
 
@@ -83,12 +83,19 @@ void MTLEngine::initWindow() {
     metalWindow.contentView.wantsLayer = YES;
 }
 
-void MTLEngine::createAccStruct() {
+void MTLEngine::createAccStructs() {
     model = std::make_unique<Model>(metalDevice);
     MTL::CommandBuffer* commandBuffer = metalCommandQueue->commandBuffer();
     accStruct = std::make_unique<TriangleAccelerationStructure>(metalDevice, commandBuffer, *model);
     commandBuffer->commit();
     commandBuffer->waitUntilCompleted();
+    
+    
+    std::vector<TriangleAccelerationStructure> subStructs;
+    subStructs.push_back(*accStruct);
+    
+    MTL::CommandBuffer* instanceCmdBuf = metalCommandQueue->commandBuffer();
+    instanceAccStruct = std::make_unique<InstanceAccelerationStructure>(metalDevice, instanceCmdBuf, subStructs);
 }
 
 void MTLEngine::createSquare() {
@@ -159,7 +166,7 @@ void MTLEngine::runRaytrace() {
     encoder->setComputePipelineState(computePSO);
     encoder->setTexture(rayTracingOutput->texture, 0);
     encoder->setComputePipelineState(computePSO);
-    encoder->setAccelerationStructure(accStruct->accelerationStructure, ACC_STRUCT_BUFFER_IDX);
+    encoder->setAccelerationStructure(instanceAccStruct->accelerationStructure, ACC_STRUCT_BUFFER_IDX);
     encoder->setBuffer(viewProjBuffer, 0, CAMERA_BUFFER_IDX);
     encoder->setBuffer(model->getVertexBuffer(), 0, VERTICES_BUFFER_IDX);
     encoder->setBuffer(model->getIndexBuffer(), 0, INDICES_BUFFER_IDX);
