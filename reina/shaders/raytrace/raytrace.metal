@@ -1,6 +1,6 @@
 #include <metal_stdlib>
 
-#include "shared.hpp"
+#include "../../polyglot/shared.hpp"
 
 using namespace metal;
 using namespace metal::raytracing;

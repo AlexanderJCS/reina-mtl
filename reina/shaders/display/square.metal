@@ -1,7 +1,7 @@
 #include <metal_stdlib>
 using namespace metal;
 
-#include "vertex_data.hpp"
+#include "../../polyglot/shared.hpp"
 
 struct VertexOut {
     // The [[position]] attribute of this member indicates that this value

@@ -27,3 +27,9 @@ struct FrameParams {
     uint frameIndex;
     uint samplesPerBatch;
 };
+
+struct VertexData {
+    MATH_PREFIX::float4 position;
+    MATH_PREFIX::float2 textureCoordinate;
+};
+

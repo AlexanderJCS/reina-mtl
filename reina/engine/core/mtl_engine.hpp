@@ -17,7 +17,6 @@
 #include <stb/stb_image.h>
 #include <simd/simd.h>
 
-#include "vertex_data.hpp"
 #include "texture.hpp"
 #include "tri_acc_struct.hpp"
 #include "shared.hpp"
