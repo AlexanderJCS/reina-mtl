@@ -20,6 +20,7 @@
 #include "vertex_data.hpp"
 #include "texture.hpp"
 #include "tri_acc_struct.hpp"
+#include "shared.hpp"
 
 #include <Metal/Metal.hpp>
 
@@ -29,13 +30,14 @@ public:
     void run();
     void cleanup();
     
+    void createBuffers();
     void createAccStruct();
     void createSquare();
     void createDefaultLibrary();
     void createCommandQueue();
     void createRenderPipeline();
     void createComputePipeline();
-    void createViewProjMatrix();
+    void updateBuffers();
 
     void runRaytrace();
     void encodeRenderCommand(MTL::RenderCommandEncoder* renderEncoder);
@@ -49,6 +51,11 @@ private:
     void initDevice();
     void initWindow();
 
+    static constexpr uint WIDTH = 800;
+    static constexpr uint HEIGHT = 600;
+    int drawableWidth;
+    int drawableHeight;
+    
     std::unique_ptr<TriangleAccelerationStructure> accStruct;
     MTL::Device* metalDevice;
     GLFWwindow* glfwWindow;
@@ -65,6 +72,8 @@ private:
     MTL::RenderPipelineState* metalRenderPSO;
     MTL::Buffer* triangleVertexBuffer;
     MTL::Buffer* squareVertexBuffer;
+    MTL::Buffer* frameParamsBuffer;
+    FrameParams frameParams;
 
-    Texture* grassTexture;
+    Texture* rayTracingOutput;
 };

@@ -1,12 +1,9 @@
 #include <metal_stdlib>
 
+#include "shared.hpp"
+
 using namespace metal;
 using namespace metal::raytracing;
-
-struct Matrices {
-    float4x4 invView;
-    float4x4 invProjection;
-};
 
 ray getStartingRay(
     float2 pixel,
@@ -18,7 +15,7 @@ ray getStartingRay(
 
     float2 ndc = float2(
         (randomPixelCenter.x / resolution.x) * 2.0 - 1.0,
-        -((randomPixelCenter.y / resolution.y) * 2.0 - 1.0)  // Flip y-coordinate so image isn't upside down.
+        -((randomPixelCenter.y / resolution.y) * 2.0 - 1.0)  // Flip y-coordinate so image isn't upside down
     );
 
     float4 clipPos = float4(ndc, -1.0, 1.0);
@@ -102,15 +99,15 @@ float3 bsdfSampleDiffuse(float3 n, thread uint& seed) {
     return normalize(direction);
 }
 
-kernel void raytraceMain(acceleration_structure<> as[[buffer(0)]],
-                         constant Matrices& matrices [[buffer(1)]],
-                         constant packed_float3* vertices [[buffer(2)]],
-                         constant int* indices [[buffer(3)]],
-                         texture2d<float, access::write> outTex [[texture(0)]],
+kernel void raytraceMain(acceleration_structure<> as[[buffer(ACC_STRUCT_BUFFER_IDX)]],
+                         constant CameraData& matrices [[buffer(CAMERA_BUFFER_IDX)]],
+                         constant packed_float3* vertices [[buffer(VERTICES_BUFFER_IDX)]],
+                         constant int* indices [[buffer(INDICES_BUFFER_IDX)]],
+                         constant FrameParams& frameParams [[buffer(FRAME_PARAMS_BUFFER_IDX)]],
+                         texture2d<float, access::read_write> outTex [[texture(0)]],
                          uint2 gid [[thread_position_in_grid]]) {
     uint width  = outTex.get_width();
     uint height = outTex.get_height();
-
 
     if (gid.x >= width || gid.y >= height) {
         return;
@@ -120,7 +117,7 @@ kernel void raytraceMain(acceleration_structure<> as[[buffer(0)]],
     
     intersector<triangle_data> i;
     
-    ray r = getStartingRay(float2(gid), float2(width, height), matrices.invView, matrices.invProjection);
+    ray r = getStartingRay(float2(gid), float2(width, height), matrices.invView, matrices.invProj);
     
     float3 throughput = float3(1);
     float3 incomingLight = float3(0);
@@ -141,5 +138,9 @@ kernel void raytraceMain(acceleration_structure<> as[[buffer(0)]],
         r.direction = bsdfSampleDiffuse(hit.normal, seed);
     }
     
-    outTex.write(float4(incomingLight, 1.0), gid.xy);
+    float4 oldColor = outTex.read(gid.xy);
+    float4 thisColor = float4(incomingLight, 1);
+    float4 newColor = frameParams.frameIndex == 0 ? thisColor : mix(oldColor, thisColor, 1 / frameParams.frameIndex);
+    
+    outTex.write(newColor, gid.xy);
 }

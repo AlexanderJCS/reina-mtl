@@ -17,7 +17,13 @@ void MTLEngine::init() {
     createCommandQueue();
     createRenderPipeline();
     createAccStruct();
-    createViewProjMatrix();
+    createBuffers();
+}
+
+void MTLEngine::updateBuffers() {
+    frameParams.frameIndex++;
+    void* contents = frameParamsBuffer->contents();
+    memcpy(contents, &frameParams, sizeof(frameParams));
 }
 
 void MTLEngine::run() {
@@ -26,6 +32,9 @@ void MTLEngine::run() {
             metalDrawable = (__bridge CA::MetalDrawable*)[metalLayer nextDrawable];
             draw();
         }
+        
+        updateBuffers();
+        
         glfwPollEvents();
     }
 }
@@ -39,38 +48,39 @@ void MTLEngine::initDevice() {
     metalDevice = MTL::CreateSystemDefaultDevice();
 }
 
-void MTLEngine::createViewProjMatrix() {
-    simd::float4x4 proj = makePerspective(1.57f, 800.0f/600.0f, 0.01f, 1e6);
+void MTLEngine::createBuffers() {
+    simd::float4x4 proj = makePerspective(1.57f, float(WIDTH)/float(HEIGHT), 0.01f, 1e6);
     simd::float4x4 view = lookAt(simd::float3{0, 0, 0}, simd::float3{0, 0, 1}, simd::float3{0, 1, 0});
     
-    simd::float4x4 viewProjBufferContents[] = {
-        simd::inverse(view),
-        simd::inverse(proj)
+    CameraData viewProjBufferContents{
+        .invView = simd::inverse(view),
+        .invProj = simd::inverse(proj)
     };
     
     viewProjBuffer = metalDevice->newBuffer(&viewProjBufferContents, sizeof(viewProjBufferContents), MTL::ResourceStorageModeShared);
+    
+    frameParams = FrameParams(0, 64);
+    frameParamsBuffer = metalDevice->newBuffer(&frameParams, sizeof(FrameParams), MTL::ResourceStorageModeShared);
 }
 
 void MTLEngine::initWindow() {
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindow = glfwCreateWindow(800, 600, "Metal Engine", NULL, NULL);
+    glfwWindow = glfwCreateWindow(WIDTH, HEIGHT, "Metal Engine", NULL, NULL);
     if (!glfwWindow) {
         glfwTerminate();
         exit(EXIT_FAILURE);
     }
-    
-    int width, height;
-    glfwGetFramebufferSize(glfwWindow, &width, &height);
+
+    glfwGetFramebufferSize(glfwWindow, &drawableWidth, &drawableHeight);
     
     metalWindow = glfwGetCocoaWindow(glfwWindow);
     metalLayer = [CAMetalLayer layer];
     metalLayer.device = (__bridge id<MTLDevice>)metalDevice;
     metalLayer.pixelFormat = MTLPixelFormatBGRA8Unorm;
+    metalLayer.drawableSize = CGSizeMake(drawableWidth, drawableHeight);
     metalWindow.contentView.layer = metalLayer;
     metalWindow.contentView.wantsLayer = YES;
-    metalLayer.drawableSize = CGSizeMake(width, height);
-    
 }
 
 void MTLEngine::createAccStruct() {
@@ -93,7 +103,7 @@ void MTLEngine::createSquare() {
 
     squareVertexBuffer = metalDevice->newBuffer(&squareVertices, sizeof(squareVertices), MTL::ResourceStorageModeShared);
 
-    grassTexture = new Texture("assets/mc_grass.jpeg", metalDevice, MTL::TextureUsageShaderRead | MTL::TextureUsageShaderWrite);
+    rayTracingOutput = new Texture(metalDevice, drawableWidth, drawableHeight, 4, MTL::PixelFormatRGBA16Float, MTL::TextureUsageShaderRead | MTL::TextureUsageShaderWrite);
 }
 
 
@@ -147,13 +157,14 @@ void MTLEngine::runRaytrace() {
     MTL::CommandBuffer* commandBuffer = metalCommandQueue->commandBuffer();
     MTL::ComputeCommandEncoder* encoder = commandBuffer->computeCommandEncoder();
     encoder->setComputePipelineState(computePSO);
-    encoder->setTexture(grassTexture->texture, 0);
+    encoder->setTexture(rayTracingOutput->texture, 0);
     encoder->setComputePipelineState(computePSO);
-    encoder->setAccelerationStructure(accStruct->accelerationStructure, 0);
-    encoder->setBuffer(viewProjBuffer, 0, 1);
-    encoder->setBuffer(model->getVertexBuffer(), 0, 2);
-    encoder->setBuffer(model->getIndexBuffer(), 0, 3);
-    MTL::Size gridSize = MTL::Size(grassTexture->width, grassTexture->height, 1);
+    encoder->setAccelerationStructure(accStruct->accelerationStructure, ACC_STRUCT_BUFFER_IDX);
+    encoder->setBuffer(viewProjBuffer, 0, CAMERA_BUFFER_IDX);
+    encoder->setBuffer(model->getVertexBuffer(), 0, VERTICES_BUFFER_IDX);
+    encoder->setBuffer(model->getIndexBuffer(), 0, INDICES_BUFFER_IDX);
+    encoder->setBuffer(frameParamsBuffer, 0, FRAME_PARAMS_BUFFER_IDX);
+    MTL::Size gridSize = MTL::Size(rayTracingOutput->width, rayTracingOutput->height, 1);
     MTL::Size threadgroupSize = MTL::Size(8, 8, 1);
     encoder->dispatchThreads(gridSize, threadgroupSize);
 
@@ -189,6 +200,6 @@ void MTLEngine::encodeRenderCommand(MTL::RenderCommandEncoder* renderCommandEnco
     MTL::PrimitiveType typeTriangle = MTL::PrimitiveTypeTriangle;
     NS::UInteger vertexStart = 0;
     NS::UInteger vertexCount = 6;
-    renderCommandEncoder->setFragmentTexture(grassTexture->texture, 0);
+    renderCommandEncoder->setFragmentTexture(rayTracingOutput->texture, 0);
     renderCommandEncoder->drawPrimitives(typeTriangle, vertexStart, vertexCount);
 }
