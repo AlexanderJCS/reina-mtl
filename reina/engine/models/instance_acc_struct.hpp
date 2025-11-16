@@ -8,7 +8,7 @@
 
 class InstanceAccelerationStructure {
 public:
-    InstanceAccelerationStructure(MTL::Device* device, MTL::CommandBuffer* cmdBuf, const std::vector<TriangleAccelerationStructure>& subStructs);
+    InstanceAccelerationStructure(MTL::Device* device, MTL::CommandQueue* cmdQueue, const std::vector<MTL::AccelerationStructure*>& accStructs);
 
     MTL::AccelerationStructure* accelerationStructure;
 };

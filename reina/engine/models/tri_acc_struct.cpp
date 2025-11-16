@@ -7,7 +7,9 @@
 
 #include "tri_acc_struct.hpp"
 
-TriangleAccelerationStructure::TriangleAccelerationStructure(MTL::Device* device, MTL::CommandBuffer* cmdBuffer, const Model& model) {
+TriangleAccelerationStructure::TriangleAccelerationStructure(MTL::Device* device, MTL::CommandQueue* cmdQueue, const Model& model) {
+    MTL::CommandBuffer* cmdBuffer = cmdQueue->commandBuffer();
+    
     MTL::AccelerationStructureTriangleGeometryDescriptor* geomDescriptor =
         MTL::AccelerationStructureTriangleGeometryDescriptor::alloc()->init();
     
@@ -31,4 +33,7 @@ TriangleAccelerationStructure::TriangleAccelerationStructure(MTL::Device* device
     MTL::AccelerationStructureCommandEncoder* commandEncoder = cmdBuffer->accelerationStructureCommandEncoder();
     commandEncoder->buildAccelerationStructure(accelerationStructure, accStructDescriptor, scratchBuffer, 0);
     commandEncoder->endEncoding();
+    
+    cmdBuffer->commit();
+    cmdBuffer->waitUntilCompleted();
 }

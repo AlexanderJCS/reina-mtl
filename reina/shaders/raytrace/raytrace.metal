@@ -11,6 +11,8 @@ ray getStartingRay(
     float4x4 invView,
     float4x4 invProjection
 ) {
+    return ray(float3(0.5, 0.5, 0), float3(0, 0, 1));
+    
     float2 randomPixelCenter = pixel + float2(0.5); // + 0.375 * randomGaussian(pld.rngState);  // For antialiasing
 
     float2 ndc = float2(
@@ -127,8 +129,13 @@ kernel void raytraceMain(acceleration_structure<> as[[buffer(ACC_STRUCT_BUFFER_I
         
         if (!hit.hit) {
             incomingLight += float3(0.4, 0.7, 1.0) * throughput;
+            outTex.write(float4(1, 0, 0, 1), gid.xy);
+            return;
             break;
         }
+        
+        outTex.write(float4(0, 0, 1, 1), gid.xy);
+        return;
         
         float3 albedo = float3(0.9, 0.3, 0.2);
         throughput *= albedo;

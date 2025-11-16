@@ -85,17 +85,12 @@ void MTLEngine::initWindow() {
 
 void MTLEngine::createAccStructs() {
     model = std::make_unique<Model>(metalDevice);
-    MTL::CommandBuffer* commandBuffer = metalCommandQueue->commandBuffer();
-    accStruct = std::make_unique<TriangleAccelerationStructure>(metalDevice, commandBuffer, *model);
-    commandBuffer->commit();
-    commandBuffer->waitUntilCompleted();
+    accStruct = std::make_unique<TriangleAccelerationStructure>(metalDevice, metalCommandQueue, *model);
     
+    std::vector<MTL::AccelerationStructure*> subStructs;
+    subStructs.push_back(accStruct->accelerationStructure);
     
-    std::vector<TriangleAccelerationStructure> subStructs;
-    subStructs.push_back(*accStruct);
-    
-    MTL::CommandBuffer* instanceCmdBuf = metalCommandQueue->commandBuffer();
-    instanceAccStruct = std::make_unique<InstanceAccelerationStructure>(metalDevice, instanceCmdBuf, subStructs);
+    instanceAccStruct = std::make_unique<InstanceAccelerationStructure>(metalDevice, metalCommandQueue, subStructs);
 }
 
 void MTLEngine::createSquare() {

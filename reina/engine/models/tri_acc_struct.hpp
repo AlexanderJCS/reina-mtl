@@ -7,7 +7,7 @@
 
 class TriangleAccelerationStructure {
 public:
-    TriangleAccelerationStructure(MTL::Device* device, MTL::CommandBuffer* cmdBuffer, const Model& model);
+    TriangleAccelerationStructure(MTL::Device* device, MTL::CommandQueue* cmdQueue, const Model& model);
     
     MTL::AccelerationStructure* accelerationStructure;
 };
