@@ -11,7 +11,7 @@ ray getStartingRay(
     float4x4 invView,
     float4x4 invProjection
 ) {
-    return ray(float3(0.5, 0.5, 0), float3(0, 0, 1));
+    return ray(float3(0.25, 0.25, 0), float3(0, 0, 1));
     
     float2 randomPixelCenter = pixel + float2(0.5); // + 0.375 * randomGaussian(pld.rngState);  // For antialiasing
 
