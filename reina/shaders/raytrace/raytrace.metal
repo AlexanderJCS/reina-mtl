@@ -11,8 +11,6 @@ ray getStartingRay(
     float4x4 invView,
     float4x4 invProjection
 ) {
-    return ray(float3(0.25, 0.25, 0), float3(0, 0, 1));
-    
     float2 randomPixelCenter = pixel + float2(0.5); // + 0.375 * randomGaussian(pld.rngState);  // For antialiasing
 
     float2 ndc = float2(
@@ -58,8 +56,8 @@ struct HitInfo {
     float3 normal;
 };
 
-HitInfo intersectScene(ray r, intersector<triangle_data> i, acceleration_structure<> as, constant packed_float3* vertices, constant int* indices) {
-    intersection_result<triangle_data> result = i.intersect(r, as);
+HitInfo intersectScene(ray r, intersector<triangle_data, instancing> i, acceleration_structure<instancing> as, constant packed_float3* vertices, constant int* indices) {
+    intersection_result<triangle_data, instancing> result = i.intersect(r, as);
     
     if (result.type != intersection_type::triangle) {
         return {false, false, float3(0), float3(0)};
@@ -101,7 +99,7 @@ float3 bsdfSampleDiffuse(float3 n, thread uint& seed) {
     return normalize(direction);
 }
 
-kernel void raytraceMain(acceleration_structure<> as[[buffer(ACC_STRUCT_BUFFER_IDX)]],
+kernel void raytraceMain(acceleration_structure<instancing> as[[buffer(ACC_STRUCT_BUFFER_IDX)]],
                          constant CameraData& matrices [[buffer(CAMERA_BUFFER_IDX)]],
                          constant packed_float3* vertices [[buffer(VERTICES_BUFFER_IDX)]],
                          constant int* indices [[buffer(INDICES_BUFFER_IDX)]],
@@ -117,7 +115,7 @@ kernel void raytraceMain(acceleration_structure<> as[[buffer(ACC_STRUCT_BUFFER_I
 
     uint seed = (height + gid.y) * width + gid.x;
     
-    intersector<triangle_data> i;
+    intersector<triangle_data, instancing> i;
     
     ray r = getStartingRay(float2(gid), float2(width, height), matrices.invView, matrices.invProj);
     
@@ -129,13 +127,8 @@ kernel void raytraceMain(acceleration_structure<> as[[buffer(ACC_STRUCT_BUFFER_I
         
         if (!hit.hit) {
             incomingLight += float3(0.4, 0.7, 1.0) * throughput;
-            outTex.write(float4(1, 0, 0, 1), gid.xy);
-            return;
             break;
         }
-        
-        outTex.write(float4(0, 0, 1, 1), gid.xy);
-        return;
         
         float3 albedo = float3(0.9, 0.3, 0.2);
         throughput *= albedo;

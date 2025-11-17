@@ -77,7 +77,7 @@ void MTLEngine::initWindow() {
     metalWindow = glfwGetCocoaWindow(glfwWindow);
     metalLayer = [CAMetalLayer layer];
     metalLayer.device = (__bridge id<MTLDevice>)metalDevice;
-    metalLayer.pixelFormat = MTLPixelFormatBGRA8Unorm;
+    metalLayer.pixelFormat = MTLPixelFormatBGRA8Unorm_sRGB;
     metalLayer.drawableSize = CGSizeMake(drawableWidth, drawableHeight);
     metalWindow.contentView.layer = metalLayer;
     metalWindow.contentView.wantsLayer = YES;
@@ -158,14 +158,18 @@ void MTLEngine::draw() {
 void MTLEngine::runRaytrace() {
     MTL::CommandBuffer* commandBuffer = metalCommandQueue->commandBuffer();
     MTL::ComputeCommandEncoder* encoder = commandBuffer->computeCommandEncoder();
+    
+    encoder->useResource(accStruct->accelerationStructure, MTL::ResourceUsageRead);
+//    encoder->useResource(instanceAccStruct->accelerationStructure, MTL::ResourceUsageRead);
+    
     encoder->setComputePipelineState(computePSO);
     encoder->setTexture(rayTracingOutput->texture, 0);
-    encoder->setComputePipelineState(computePSO);
     encoder->setAccelerationStructure(instanceAccStruct->accelerationStructure, ACC_STRUCT_BUFFER_IDX);
     encoder->setBuffer(viewProjBuffer, 0, CAMERA_BUFFER_IDX);
     encoder->setBuffer(model->getVertexBuffer(), 0, VERTICES_BUFFER_IDX);
     encoder->setBuffer(model->getIndexBuffer(), 0, INDICES_BUFFER_IDX);
     encoder->setBuffer(frameParamsBuffer, 0, FRAME_PARAMS_BUFFER_IDX);
+    
     MTL::Size gridSize = MTL::Size(rayTracingOutput->width, rayTracingOutput->height, 1);
     MTL::Size threadgroupSize = MTL::Size(8, 8, 1);
     encoder->dispatchThreads(gridSize, threadgroupSize);

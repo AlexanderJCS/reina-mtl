@@ -3,4 +3,18 @@
    uuid = "FB1CB05C-3FAB-449B-91A5-B2FC93716956"
    type = "1"
    version = "2.0">
+   <Breakpoints>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.RuntimeIssueBreakpoint">
+         <BreakpointContent
+            uuid = "F801CE74-90FC-494C-9442-AD2337750D57"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            breakpointStackSelectionBehavior = "1"
+            type = "8"
+            categories = "Metal Diagnostics">
+         </BreakpointContent>
+      </BreakpointProxy>
+   </Breakpoints>
 </Bucket>

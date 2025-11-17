@@ -21,6 +21,10 @@ InstanceAccelerationStructure::InstanceAccelerationStructure(MTL::Device* device
     for (int instanceIdx = 0; instanceIdx < instanceASDesc->instanceCount(); instanceIdx++) {
         MTL::AccelerationStructureInstanceDescriptor& desc = instanceDescriptors[instanceIdx];
         
+        
+        desc.intersectionFunctionTableOffset = 0;
+        desc.options = 0;
+        
         desc.accelerationStructureIndex = instanceIdx;
         desc.mask = 0xFFFFFFFF;
         
