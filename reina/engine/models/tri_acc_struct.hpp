@@ -12,6 +12,8 @@ public:
     [[nodiscard]] MTL::AccelerationStructure* getAccelerationStructure() const;
     
 private:
+    void compact(MTL::Device* device, MTL::CommandQueue* cmdQueue);
+    
     MTL::AccelerationStructure* m_accStruct;
 };
 
