@@ -10,7 +10,10 @@ class InstanceAccelerationStructure {
 public:
     InstanceAccelerationStructure(MTL::Device* device, MTL::CommandQueue* cmdQueue, const std::vector<MTL::AccelerationStructure*>& accStructs);
 
-    MTL::AccelerationStructure* accelerationStructure;
+    [[nodiscard]] MTL::AccelerationStructure* getAccelerationStructure() const;
+    
+private:
+    MTL::AccelerationStructure* m_accStruct;
 };
 
 #endif /* instance_acc_struct_hpp */

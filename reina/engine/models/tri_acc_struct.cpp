@@ -26,14 +26,18 @@ TriangleAccelerationStructure::TriangleAccelerationStructure(MTL::Device* device
     
     MTL::AccelerationStructureSizes sizes = device->accelerationStructureSizes(accStructDescriptor);
 
-    accelerationStructure = device->newAccelerationStructure(sizes.accelerationStructureSize);
+    m_accStruct = device->newAccelerationStructure(sizes.accelerationStructureSize);
     
     MTL::Buffer* scratchBuffer = device->newBuffer(sizes.buildScratchBufferSize, MTL::ResourceStorageModePrivate);
     
     MTL::AccelerationStructureCommandEncoder* commandEncoder = cmdBuffer->accelerationStructureCommandEncoder();
-    commandEncoder->buildAccelerationStructure(accelerationStructure, accStructDescriptor, scratchBuffer, 0);
+    commandEncoder->buildAccelerationStructure(m_accStruct, accStructDescriptor, scratchBuffer, 0);
     commandEncoder->endEncoding();
     
     cmdBuffer->commit();
     cmdBuffer->waitUntilCompleted();
+}
+
+MTL::AccelerationStructure* TriangleAccelerationStructure::getAccelerationStructure() const {
+    return m_accStruct;
 }

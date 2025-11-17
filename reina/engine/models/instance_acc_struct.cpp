@@ -43,14 +43,18 @@ InstanceAccelerationStructure::InstanceAccelerationStructure(MTL::Device* device
     
     // 3. Build
     MTL::AccelerationStructureSizes sizes = device->accelerationStructureSizes(instanceASDesc);
-    accelerationStructure = device->newAccelerationStructure(sizes.accelerationStructureSize);
+    m_accStruct = device->newAccelerationStructure(sizes.accelerationStructureSize);
     
     MTL::Buffer* scratchBuffer = device->newBuffer(sizes.buildScratchBufferSize, MTL::ResourceStorageModePrivate);
     
     MTL::AccelerationStructureCommandEncoder* commandEncoder = cmdBuffer->accelerationStructureCommandEncoder();
-    commandEncoder->buildAccelerationStructure(accelerationStructure, instanceASDesc, scratchBuffer, 0);
+    commandEncoder->buildAccelerationStructure(m_accStruct, instanceASDesc, scratchBuffer, 0);
     commandEncoder->endEncoding();
     
     cmdBuffer->commit();
     cmdBuffer->waitUntilCompleted();
+}
+
+MTL::AccelerationStructure* InstanceAccelerationStructure::getAccelerationStructure() const {
+    return m_accStruct;
 }

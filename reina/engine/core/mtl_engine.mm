@@ -88,7 +88,7 @@ void MTLEngine::createAccStructs() {
     accStruct = std::make_unique<TriangleAccelerationStructure>(metalDevice, metalCommandQueue, *model);
     
     std::vector<MTL::AccelerationStructure*> subStructs;
-    subStructs.push_back(accStruct->accelerationStructure);
+    subStructs.push_back(accStruct->getAccelerationStructure());
     
     instanceAccStruct = std::make_unique<InstanceAccelerationStructure>(metalDevice, metalCommandQueue, subStructs);
 }
@@ -159,12 +159,11 @@ void MTLEngine::runRaytrace() {
     MTL::CommandBuffer* commandBuffer = metalCommandQueue->commandBuffer();
     MTL::ComputeCommandEncoder* encoder = commandBuffer->computeCommandEncoder();
     
-    encoder->useResource(accStruct->accelerationStructure, MTL::ResourceUsageRead);
-//    encoder->useResource(instanceAccStruct->accelerationStructure, MTL::ResourceUsageRead);
-    
+    encoder->useResource(accStruct->getAccelerationStructure(), MTL::ResourceUsageRead);
+
     encoder->setComputePipelineState(computePSO);
     encoder->setTexture(rayTracingOutput->texture, 0);
-    encoder->setAccelerationStructure(instanceAccStruct->accelerationStructure, ACC_STRUCT_BUFFER_IDX);
+    encoder->setAccelerationStructure(instanceAccStruct->getAccelerationStructure(), ACC_STRUCT_BUFFER_IDX);
     encoder->setBuffer(viewProjBuffer, 0, CAMERA_BUFFER_IDX);
     encoder->setBuffer(model->getVertexBuffer(), 0, VERTICES_BUFFER_IDX);
     encoder->setBuffer(model->getIndexBuffer(), 0, INDICES_BUFFER_IDX);

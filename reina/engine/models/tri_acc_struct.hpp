@@ -9,7 +9,10 @@ class TriangleAccelerationStructure {
 public:
     TriangleAccelerationStructure(MTL::Device* device, MTL::CommandQueue* cmdQueue, const Model& model);
     
-    MTL::AccelerationStructure* accelerationStructure;
+    [[nodiscard]] MTL::AccelerationStructure* getAccelerationStructure() const;
+    
+private:
+    MTL::AccelerationStructure* m_accStruct;
 };
 
 #endif /* tri_acc_struct_hpp */
