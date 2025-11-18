@@ -5,50 +5,6 @@
 using namespace metal;
 using namespace metal::raytracing;
 
-ray getStartingRay(
-    float2 pixel,
-    float2 resolution,
-    float4x4 invView,
-    float4x4 invProjection
-) {
-    float2 randomPixelCenter = pixel + float2(0.5); // + 0.375 * randomGaussian(pld.rngState);  // For antialiasing
-
-    float2 ndc = float2(
-        (randomPixelCenter.x / resolution.x) * 2.0 - 1.0,
-        -((randomPixelCenter.y / resolution.y) * 2.0 - 1.0)  // Flip y-coordinate so image isn't upside down
-    );
-
-    float4 clipPos = float4(ndc, -1.0, 1.0);
-
-    // Unproject from clip space to view space using the inverse projection matrix
-    float4 viewPos = float4(invProjection * clipPos);
-    viewPos /= viewPos.w;  // Perspective divide.
-
-    float3 viewDir = normalize(viewPos.xyz);
-
-    // Transform the view-space direction to world space using the inverse view matrix.
-    // Use a w component of 0.0 to indicate that we're transforming a direction.
-    float4 worldDir4 = float4(invView * float4(viewDir, 0.0));
-    float3 rayDirection = normalize(worldDir4.xyz);
-
-    float3 origin = invView[3].xyz;
-    float3 focalPoint = origin + rayDirection; // * pushConstants.focusDist;
-//    float2 lensOffset = randomInUnitHexagon(pld.rngState) * pushConstants.defocusMultiplier;
-    float2 lensOffset(0, 0);
-    
-    float3 right = normalize(invView[0].xyz);
-    float3 up = normalize(invView[1].xyz);
-
-    // Offset the origin by the lens offset.
-    float3 offset = right * lensOffset.x + up * lensOffset.y;
-    float3 newOrigin = origin + offset;
-
-    // Recompute the ray direction so that the ray goes through the focal point.
-    float3 newDirection = normalize(focalPoint - newOrigin);
-
-    return ray(newOrigin, newDirection);
-}
-
 struct HitInfo {
     bool hit;
     bool backface;
@@ -90,6 +46,18 @@ float rand(thread uint& seed) {
     return float(word) / 4294967295.0f;
 }
 
+float2 randomGaussian(thread uint& seed) {
+    /// Function samples a gaussian distribution with sigma=1 around 0. Taken from: https://nvpro-samples.github.io/vk_mini_path_tracer/extras.html
+    
+    // Almost uniform in (0,1] - make sure the value is never 0:
+    float u1 = max(1e-38, rand(seed));
+    float u2 = rand(seed);  // In [0, 1]
+    float r = sqrt(-2.0 * log(u1));
+    float theta = 2 * M_PI_F * u2;  // Random in [0, 2pi]
+
+    return r * float2(cos(theta), sin(theta));
+}
+
 float3 bsdfSampleDiffuse(float3 n, thread uint& seed) {
     float theta = 2.0 * M_PI_F * rand(seed);  // Random in [0, 2pi]
     float u = 2.0 * rand(seed) - 1.0;   // Random in [-1, 1]
@@ -97,6 +65,51 @@ float3 bsdfSampleDiffuse(float3 n, thread uint& seed) {
     float3 direction = n + float3(r * cos(theta), r * sin(theta), u);
     
     return normalize(direction);
+}
+
+ray getStartingRay(
+    thread uint& seed,
+    float2 pixel,
+    float2 resolution,
+    float4x4 invView,
+    float4x4 invProjection
+) {
+    float2 randomPixelCenter = pixel + float2(0.5) + 0.375 * randomGaussian(seed);  // For antialiasing
+
+    float2 ndc = float2(
+        (randomPixelCenter.x / resolution.x) * 2.0 - 1.0,
+        -((randomPixelCenter.y / resolution.y) * 2.0 - 1.0)  // Flip y-coordinate so image isn't upside down
+    );
+
+    float4 clipPos = float4(ndc, -1.0, 1.0);
+
+    // Unproject from clip space to view space using the inverse projection matrix
+    float4 viewPos = float4(invProjection * clipPos);
+    viewPos /= viewPos.w;  // Perspective divide.
+
+    float3 viewDir = normalize(viewPos.xyz);
+
+    // Transform the view-space direction to world space using the inverse view matrix.
+    // Use a w component of 0.0 to indicate that we're transforming a direction.
+    float4 worldDir4 = float4(invView * float4(viewDir, 0.0));
+    float3 rayDirection = normalize(worldDir4.xyz);
+
+    float3 origin = invView[3].xyz;
+    float3 focalPoint = origin + rayDirection; // * pushConstants.focusDist;
+//    float2 lensOffset = randomInUnitHexagon(pld.rngState) * pushConstants.defocusMultiplier;
+    float2 lensOffset(0, 0);
+    
+    float3 right = normalize(invView[0].xyz);
+    float3 up = normalize(invView[1].xyz);
+
+    // Offset the origin by the lens offset.
+    float3 offset = right * lensOffset.x + up * lensOffset.y;
+    float3 newOrigin = origin + offset;
+
+    // Recompute the ray direction so that the ray goes through the focal point.
+    float3 newDirection = normalize(focalPoint - newOrigin);
+
+    return ray(newOrigin, newDirection);
 }
 
 kernel void raytraceMain(acceleration_structure<instancing> as[[buffer(ACC_STRUCT_BUFFER_IDX)]],
@@ -113,11 +126,11 @@ kernel void raytraceMain(acceleration_structure<instancing> as[[buffer(ACC_STRUC
         return;
     }
 
-    uint seed = (height + gid.y) * width + gid.x;
+    uint seed = uint((frameParams.frameIndex * height + gid.y) * width + gid.x);
     
     intersector<triangle_data, instancing> i;
     
-    ray r = getStartingRay(float2(gid), float2(width, height), matrices.invView, matrices.invProj);
+    ray r = getStartingRay(seed, float2(gid), float2(width, height), matrices.invView, matrices.invProj);
     
     float3 throughput = float3(1);
     float3 incomingLight = float3(0);

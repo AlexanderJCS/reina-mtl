@@ -34,7 +34,6 @@ void MTLEngine::run() {
         }
         
         updateBuffers();
-        
         glfwPollEvents();
     }
 }
