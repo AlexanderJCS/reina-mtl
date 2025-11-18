@@ -38,6 +38,15 @@ HitInfo intersectScene(ray r, intersector<triangle_data, instancing> i, accelera
     return {true, backface, pos, norm};
 }
 
+uint hash(uint x) {
+    x ^= x >> 16;
+    x *= 0x7feb352d;
+    x ^= x >> 15;
+    x *= 0x846ca68b;
+    x ^= x >> 16;
+    return x;
+}
+
 float rand(thread uint& seed) {
     /// Condensed version of pcg_output_rxs_m_xs_32_32, with simple conversion to floating-point [0,1].
     seed = seed * 747796405 + 1;
@@ -126,7 +135,9 @@ kernel void raytraceMain(acceleration_structure<instancing> as[[buffer(ACC_STRUC
         return;
     }
 
-    uint seed = uint((frameParams.frameIndex * height + gid.y) * width + gid.x);
+    uint raw = (frameParams.frameIndex * height + gid.y) * width + gid.x;
+    uint seed = hash(raw);
+    if (seed == 0) seed = 1;
     
     intersector<triangle_data, instancing> i;
     
@@ -153,7 +164,9 @@ kernel void raytraceMain(acceleration_structure<instancing> as[[buffer(ACC_STRUC
     
     float4 oldColor = outTex.read(gid.xy);
     float4 thisColor = float4(incomingLight, 1);
-    float4 newColor = frameParams.frameIndex == 0 ? thisColor : mix(oldColor, thisColor, 1 / frameParams.frameIndex);
     
+    uint n = frameParams.frameIndex + 1;
+    float4 newColor = oldColor + (thisColor - oldColor) / float(n);
+
     outTex.write(newColor, gid.xy);
 }
