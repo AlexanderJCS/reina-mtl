@@ -30,3 +30,17 @@ simd::float4x4 lookAt(simd::float3 eye, simd::float3 center, simd::float3 up) {
 
     return result;
 }
+
+MTL::PackedFloat4x3 simdToMTL(simd::float4x4 m) {
+    MTL::PackedFloat4x3 out;
+    
+    for (int c = 0; c < 4; c++) {
+        out.columns[c] = {
+            m.columns[c].x,
+            m.columns[c].y,
+            m.columns[c].z
+        };
+    }
+    
+    return out;
+}

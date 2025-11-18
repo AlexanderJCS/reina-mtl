@@ -1,7 +1,8 @@
 #include "instance_acc_struct.hpp"
 
+#include "matmath.hpp"
 
-InstanceAccelerationStructure::InstanceAccelerationStructure(MTL::Device* device, MTL::CommandQueue* cmdQueue, const std::vector<MTL::AccelerationStructure*>& accStructs) {
+InstanceAccelerationStructure::InstanceAccelerationStructure(MTL::Device* device, MTL::CommandQueue* cmdQueue, const std::vector<MTL::AccelerationStructure*>& accStructs, std::vector<simd::float4x4> transforms) {
     
     // 1. Create descriptor
     MTL::InstanceAccelerationStructureDescriptor* instanceASDesc =
@@ -26,12 +27,7 @@ InstanceAccelerationStructure::InstanceAccelerationStructure(MTL::Device* device
         desc.accelerationStructureIndex = instanceIdx;
         desc.mask = 0xFFFFFFFF;
         
-        MTL::PackedFloat4x3 transform;
-        transform[0][0] = 1;
-        transform[1][1] = 1;
-        transform[2][2] = 1;
-        
-        desc.transformationMatrix = transform;
+        desc.transformationMatrix = simdToMTL(transforms[instanceIdx]);
     }
     
 

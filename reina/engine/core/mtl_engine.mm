@@ -1,5 +1,6 @@
 #include "mtl_engine.hpp"
 
+#include <simd/simd.h>
 #include <iostream>
 
 #include "model.hpp"
@@ -84,12 +85,25 @@ void MTLEngine::initWindow() {
 
 void MTLEngine::createAccStructs() {
     model = std::make_unique<Model>(metalDevice);
-    accStruct = std::make_unique<TriangleAccelerationStructure>(metalDevice, metalCommandQueue, *model);
+    childAccStructs = std::vector<std::unique_ptr<TriangleAccelerationStructure>>{};
+    
+    childAccStructs.push_back(std::make_unique<TriangleAccelerationStructure>(metalDevice, metalCommandQueue, *model));
+    childAccStructs.push_back(std::make_unique<TriangleAccelerationStructure>(metalDevice, metalCommandQueue, *model));
     
     std::vector<MTL::AccelerationStructure*> subStructs;
-    subStructs.push_back(accStruct->getAccelerationStructure());
+    for (const std::unique_ptr<TriangleAccelerationStructure>& accStruct : childAccStructs) {
+        subStructs.push_back(accStruct->getAccelerationStructure());
+    }
+
+    std::vector<simd::float4x4> transforms{
+        matrix_identity_float4x4,
+        matrix_identity_float4x4
+    };
     
-    instanceAccStruct = std::make_unique<InstanceAccelerationStructure>(metalDevice, metalCommandQueue, subStructs);
+    transforms[0].columns[3] = {-1, 0, 0, 1};
+    transforms[1].columns[3] = {1, 0, 0, 1};
+    
+    instanceAccStruct = std::make_unique<InstanceAccelerationStructure>(metalDevice, metalCommandQueue, subStructs, transforms);
 }
 
 void MTLEngine::createSquare() {
@@ -158,7 +172,9 @@ void MTLEngine::runRaytrace() {
     MTL::CommandBuffer* commandBuffer = metalCommandQueue->commandBuffer();
     MTL::ComputeCommandEncoder* encoder = commandBuffer->computeCommandEncoder();
     
-    encoder->useResource(accStruct->getAccelerationStructure(), MTL::ResourceUsageRead);
+    for (const std::unique_ptr<TriangleAccelerationStructure>& accStruct : childAccStructs) {
+        encoder->useResource(accStruct->getAccelerationStructure(), MTL::ResourceUsageRead);
+    }
 
     encoder->setComputePipelineState(computePSO);
     encoder->setTexture(rayTracingOutput->texture, 0);

@@ -56,7 +56,7 @@ private:
     int drawableWidth;
     int drawableHeight;
     
-    std::unique_ptr<TriangleAccelerationStructure> accStruct;
+    std::vector<std::unique_ptr<TriangleAccelerationStructure>> childAccStructs;
     std::unique_ptr<InstanceAccelerationStructure> instanceAccStruct;
     
     MTL::Device* metalDevice;

@@ -3,6 +3,8 @@
 
 #include <Metal/Metal.hpp>
 
+#include <simd/simd.h>
+
 #include "model.hpp"
 #include "acc_struct.hpp"
 
