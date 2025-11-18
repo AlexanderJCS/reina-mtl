@@ -3,8 +3,6 @@
 
 InstanceAccelerationStructure::InstanceAccelerationStructure(MTL::Device* device, MTL::CommandQueue* cmdQueue, const std::vector<MTL::AccelerationStructure*>& accStructs) {
     
-    MTL::CommandBuffer* cmdBuffer = cmdQueue->commandBuffer();
-    
     // 1. Create descriptor
     MTL::InstanceAccelerationStructureDescriptor* instanceASDesc =
         MTL::InstanceAccelerationStructureDescriptor::alloc()->init();
@@ -42,19 +40,6 @@ InstanceAccelerationStructure::InstanceAccelerationStructure(MTL::Device* device
     instanceASDesc->setInstanceDescriptorBuffer(instanceDescriptorBuffer);
     
     // 3. Build
-    MTL::AccelerationStructureSizes sizes = device->accelerationStructureSizes(instanceASDesc);
-    m_accStruct = device->newAccelerationStructure(sizes.accelerationStructureSize);
-    
-    MTL::Buffer* scratchBuffer = device->newBuffer(sizes.buildScratchBufferSize, MTL::ResourceStorageModePrivate);
-    
-    MTL::AccelerationStructureCommandEncoder* commandEncoder = cmdBuffer->accelerationStructureCommandEncoder();
-    commandEncoder->buildAccelerationStructure(m_accStruct, instanceASDesc, scratchBuffer, 0);
-    commandEncoder->endEncoding();
-    
-    cmdBuffer->commit();
-    cmdBuffer->waitUntilCompleted();
-}
-
-MTL::AccelerationStructure* InstanceAccelerationStructure::getAccelerationStructure() const {
-    return m_accStruct;
+    build(device, cmdQueue, instanceASDesc);
+    compact(device, cmdQueue);
 }
