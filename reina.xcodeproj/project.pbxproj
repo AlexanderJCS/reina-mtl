@@ -186,6 +186,7 @@
 			buildPhase = 6847C7CE2EB8291C007CF281 /* Sources */;
 			membershipExceptions = (
 				stb/stb_image.h,
+				tinyobjloader/tinyobjloader.h,
 			);
 		};
 /* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
@@ -522,6 +523,7 @@
 				TargetAttributes = {
 					6847C7D12EB8291C007CF281 = {
 						CreatedOnToolsVersion = 26.0.1;
+						LastSwiftMigration = 2600;
 					};
 				};
 			};
@@ -673,6 +675,7 @@
 		6847C7DA2EB8291C007CF281 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				HEADER_SEARCH_PATHS = (
 					/opt/homebrew/Cellar/glfw/3.4/include,
@@ -684,12 +687,16 @@
 					/opt/homebrew/Cellar/glfw/3.4/lib,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "external/tinyobjloader/reina-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
 			};
 			name = Debug;
 		};
 		6847C7DB2EB8291C007CF281 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				HEADER_SEARCH_PATHS = (
 					/opt/homebrew/Cellar/glfw/3.4/include,
@@ -701,6 +708,8 @@
 					/opt/homebrew/Cellar/glfw/3.4/lib,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "external/tinyobjloader/reina-Bridging-Header.h";
+				SWIFT_VERSION = 6.0;
 			};
 			name = Release;
 		};

@@ -87,7 +87,7 @@ ray getStartingRay(
 
     float2 ndc = float2(
         (randomPixelCenter.x / resolution.x) * 2.0 - 1.0,
-        -((randomPixelCenter.y / resolution.y) * 2.0 - 1.0)  // Flip y-coordinate so image isn't upside down
+        (randomPixelCenter.y / resolution.y) * 2.0 - 1.0
     );
 
     float4 clipPos = float4(ndc, -1.0, 1.0);

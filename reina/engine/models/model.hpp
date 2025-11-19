@@ -9,16 +9,16 @@ namespace MTL { class Device; class Buffer; }
 
 class Model {
 public:
-    Model(MTL::Device* device);
+    Model(MTL::Device* device, const std::string& filepath);
 
     [[nodiscard]] MTL::Buffer* getVertexBuffer() const;
     [[nodiscard]] MTL::Buffer* getIndexBuffer() const;
-    [[nodiscard]] int getTriangleCount() const;
+    [[nodiscard]] size_t getTriangleCount() const;
     
 private:
     MTL::Buffer* vertexBuffer = nullptr;
     MTL::Buffer* indexBuffer = nullptr;
-    int triangleCount = 0;
+    size_t triangleCount = 0;
 };
 
 #endif /* model_hpp */

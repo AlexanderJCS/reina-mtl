@@ -50,7 +50,7 @@ void MTLEngine::initDevice() {
 
 void MTLEngine::createBuffers() {
     simd::float4x4 proj = makePerspective(1.57f, float(WIDTH)/float(HEIGHT), 0.01f, 1e6);
-    simd::float4x4 view = lookAt(simd::float3{0, 0, 0}, simd::float3{0, 0, 1}, simd::float3{0, 1, 0});
+    simd::float4x4 view = lookAt(simd::float3{0, 0, -2}, simd::float3{0, 0, 0}, simd::float3{0, 1, 0});
     
     CameraData viewProjBufferContents{
         .invView = simd::inverse(view),
@@ -84,11 +84,11 @@ void MTLEngine::initWindow() {
 }
 
 void MTLEngine::createAccStructs() {
-    model = std::make_unique<Model>(metalDevice);
+    model = std::make_unique<Model>(metalDevice, "assets/bunny.obj");
     childAccStructs = std::vector<std::unique_ptr<TriangleAccelerationStructure>>{};
     
     childAccStructs.push_back(std::make_unique<TriangleAccelerationStructure>(metalDevice, metalCommandQueue, *model));
-    childAccStructs.push_back(std::make_unique<TriangleAccelerationStructure>(metalDevice, metalCommandQueue, *model));
+//    childAccStructs.push_back(std::make_unique<TriangleAccelerationStructure>(metalDevice, metalCommandQueue, *model));
     
     std::vector<MTL::AccelerationStructure*> subStructs;
     for (const std::unique_ptr<TriangleAccelerationStructure>& accStruct : childAccStructs) {
@@ -96,12 +96,8 @@ void MTLEngine::createAccStructs() {
     }
 
     std::vector<simd::float4x4> transforms{
-        matrix_identity_float4x4,
         matrix_identity_float4x4
     };
-    
-    transforms[0].columns[3] = {-1, 0, 0, 1};
-    transforms[1].columns[3] = {1, 0, 0, 1};
     
     instanceAccStruct = std::make_unique<InstanceAccelerationStructure>(metalDevice, metalCommandQueue, subStructs, transforms);
 }
