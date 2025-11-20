@@ -121,6 +121,10 @@ ray getStartingRay(
     return ray(newOrigin, newDirection);
 }
 
+float3 skyColor(float3 dir) {
+    return mix(float3(1, 1, 1), float3(0.3, 0.5, 1.0), saturate(dir.y * 0.5 + 0.5));
+}
+
 kernel void raytraceMain(acceleration_structure<instancing> as[[buffer(ACC_STRUCT_BUFFER_IDX)]],
                          constant CameraData& matrices [[buffer(CAMERA_BUFFER_IDX)]],
                          constant packed_float3* vertices [[buffer(VERTICES_BUFFER_IDX)]],
@@ -150,7 +154,7 @@ kernel void raytraceMain(acceleration_structure<instancing> as[[buffer(ACC_STRUC
         HitInfo hit = intersectScene(r, i, as, vertices, indices);
         
         if (!hit.hit) {
-            incomingLight += float3(0.4, 0.7, 1.0) * throughput;
+            incomingLight += skyColor(r.direction) * throughput;
             break;
         }
         

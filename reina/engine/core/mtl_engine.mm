@@ -49,8 +49,8 @@ void MTLEngine::initDevice() {
 }
 
 void MTLEngine::createBuffers() {
-    simd::float4x4 proj = makePerspective(1.57f, float(WIDTH)/float(HEIGHT), 0.01f, 1e6);
-    simd::float4x4 view = lookAt(simd::float3{0, 0, -2}, simd::float3{0, 0, 0}, simd::float3{0, 1, 0});
+    simd::float4x4 proj = makePerspective(1.57f / 3.0f, float(WIDTH)/float(HEIGHT), 0.01f, 1e6);
+    simd::float4x4 view = lookAt(simd::float3{0, 0.5, -3}, simd::float3{0, 0.5, 0}, simd::float3{0, 1, 0});
     
     CameraData viewProjBufferContents{
         .invView = simd::inverse(view),
