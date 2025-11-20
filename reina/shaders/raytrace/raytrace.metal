@@ -136,28 +136,8 @@ float3 skyColor(float3 dir) {
     return mix(float3(1, 1, 1), float3(0.3, 0.5, 1.0), saturate(dir.y * 0.5 + 0.5));
 }
 
-kernel void raytraceMain(acceleration_structure<instancing> as[[buffer(ACC_STRUCT_BUFFER_IDX)]],
-                         constant CameraData& matrices [[buffer(CAMERA_BUFFER_IDX)]],
-                         constant packed_float3* vertices [[buffer(VERTICES_BUFFER_IDX)]],
-                         constant int* indices [[buffer(INDICES_BUFFER_IDX)]],
-                         constant FrameParams& frameParams [[buffer(FRAME_PARAMS_BUFFER_IDX)]],
-                         texture2d<float, access::read_write> outTex [[texture(0)]],
-                         uint2 gid [[thread_position_in_grid]]) {
-    uint width  = outTex.get_width();
-    uint height = outTex.get_height();
-
-    if (gid.x >= width || gid.y >= height) {
-        return;
-    }
-
-    uint raw = gid.x + gid.y * width + frameParams.frameIndex * 73856093u;
-    uint seed = hash(raw);
-    if (seed == 0) seed = 1;
-    
-    intersector<triangle_data, instancing> i;
-    
-    ray r = getStartingRay(seed, float2(gid), float2(width, height), matrices.invView, matrices.invProj);
-    
+float3 runRaytrace(ray r, intersector<triangle_data, instancing> i, constant packed_float3* vertices,
+                   constant int* indices, acceleration_structure<instancing> as, thread uint& seed) {
     float3 throughput = float3(1);
     float3 incomingLight = float3(0);
     
@@ -177,7 +157,37 @@ kernel void raytraceMain(acceleration_structure<instancing> as[[buffer(ACC_STRUC
         r.direction = bsdfSampleDiffuse(hit.normal, seed);
     }
     
-    float4 thisColor = float4(incomingLight, 1);
+    return incomingLight;
+}
+
+kernel void raytraceMain(acceleration_structure<instancing> as[[buffer(ACC_STRUCT_BUFFER_IDX)]],
+                         constant CameraData& matrices [[buffer(CAMERA_BUFFER_IDX)]],
+                         constant packed_float3* vertices [[buffer(VERTICES_BUFFER_IDX)]],
+                         constant int* indices [[buffer(INDICES_BUFFER_IDX)]],
+                         constant FrameParams& frameParams [[buffer(FRAME_PARAMS_BUFFER_IDX)]],
+                         texture2d<float, access::read_write> outTex [[texture(0)]],
+                         uint2 gid [[thread_position_in_grid]]) {
+    uint width  = outTex.get_width();
+    uint height = outTex.get_height();
+
+    if (gid.x >= width || gid.y >= height) {
+        return;
+    }
+
+    uint raw = gid.x + gid.y * width + frameParams.frameIndex * 73856093u;
+    uint seed = hash(raw);
+    if (seed == 0) seed = 1;
+    
+    intersector<triangle_data, instancing> intersect;
+    ray r;
+    
+    float3 sum = float3(0);
+    for (uint i = 0; i < frameParams.samplesPerBatch; i++) {
+        r = getStartingRay(seed, float2(gid), float2(width, height), matrices.invView, matrices.invProj);
+        sum += runRaytrace(r, intersect, vertices, indices, as, seed);
+    }
+    
+    float4 thisColor = float4(sum / frameParams.samplesPerBatch, 1);
     
     float4 newColor;
     if (frameParams.frameIndex == 0) {

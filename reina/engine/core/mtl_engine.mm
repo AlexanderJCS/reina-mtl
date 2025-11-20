@@ -79,6 +79,7 @@ void MTLEngine::initWindow() {
     metalLayer.device = (__bridge id<MTLDevice>)metalDevice;
     metalLayer.pixelFormat = MTLPixelFormatBGRA8Unorm;
     metalLayer.drawableSize = CGSizeMake(drawableWidth, drawableHeight);
+    metalLayer.displaySyncEnabled = NO;
     metalWindow.contentView.layer = metalLayer;
     metalWindow.contentView.wantsLayer = YES;
 }
