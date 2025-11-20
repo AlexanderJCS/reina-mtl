@@ -69,13 +69,22 @@ float2 randomGaussian(thread uint& seed) {
     return r * float2(cos(theta), sin(theta));
 }
 
+float3 randFloat3(thread uint& seed) {
+    return float3(rand(seed), rand(seed), rand(seed));
+}
+
+float3 randUnitFloat3(thread uint& seed) {
+    while (true) {
+        float3 p = randFloat3(seed) * 2 - 1;
+        float lensq = dot(p, p);
+        if (1e-8 < lensq && lensq <= 1) {
+            return normalize(p);
+        }
+    }
+}
+
 float3 bsdfSampleDiffuse(float3 n, thread uint& seed) {
-    float theta = 2.0 * M_PI_F * rand(seed);  // Random in [0, 2pi]
-    float u = 2.0 * rand(seed) - 1.0;   // Random in [-1, 1]
-    float r = sqrt(1.0 - u * u);
-    float3 direction = n + float3(r * cos(theta), r * sin(theta), u);
-    
-    return normalize(direction);
+    return normalize(float3(n + randUnitFloat3(seed)));
 }
 
 ray getStartingRay(
@@ -92,7 +101,7 @@ ray getStartingRay(
         (randomPixelCenter.y / resolution.y) * 2.0 - 1.0
     );
 
-    float4 clipPos = float4(ndc, -1.0, 1.0);
+    float4 clipPos = float4(ndc, 0.0, 1.0);
 
     // Unproject from clip space to view space using the inverse projection matrix
     float4 viewPos = float4(invProjection * clipPos);
@@ -141,7 +150,7 @@ kernel void raytraceMain(acceleration_structure<instancing> as[[buffer(ACC_STRUC
         return;
     }
 
-    uint raw = (frameParams.frameIndex * height + gid.y) * width + gid.x;
+    uint raw = gid.x + gid.y * width + frameParams.frameIndex * 73856093u;
     uint seed = hash(raw);
     if (seed == 0) seed = 1;
     
@@ -160,7 +169,7 @@ kernel void raytraceMain(acceleration_structure<instancing> as[[buffer(ACC_STRUC
             break;
         }
         
-        float3 albedo = float3(0.9, 0.3, 0.2);
+        float3 albedo = float3(0.9, 0.9, 0.9);
         throughput *= albedo;
         incomingLight += float3(0) * throughput;
         
@@ -174,9 +183,8 @@ kernel void raytraceMain(acceleration_structure<instancing> as[[buffer(ACC_STRUC
     if (frameParams.frameIndex == 0) {
         newColor = thisColor;
     } else {
-        uint n = frameParams.frameIndex + 1;
         float4 oldColor = outTex.read(gid.xy);
-        newColor = oldColor + (thisColor - oldColor) / float(n);
+        newColor = (oldColor * frameParams.frameIndex + thisColor) / float(frameParams.frameIndex + 1);
     }
 
     outTex.write(newColor, gid.xy);

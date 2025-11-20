@@ -114,7 +114,7 @@ void MTLEngine::createSquare() {
 
     squareVertexBuffer = metalDevice->newBuffer(&squareVertices, sizeof(squareVertices), MTL::ResourceStorageModeShared);
 
-    rayTracingOutput = new Texture(metalDevice, drawableWidth, drawableHeight, 4, MTL::PixelFormatRGBA16Float, MTL::TextureUsageShaderRead | MTL::TextureUsageShaderWrite);
+    rayTracingOutput = new Texture(metalDevice, drawableWidth, drawableHeight, 4, MTL::PixelFormatRGBA32Float, MTL::TextureUsageShaderRead | MTL::TextureUsageShaderWrite);
 }
 
 
