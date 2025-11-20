@@ -33,7 +33,9 @@ HitInfo intersectScene(ray r, intersector<triangle_data, instancing> i, accelera
     
     float3 norm = normalize(cross(v1 - v0, v2 - v0));
     bool backface = dot(norm, r.direction) > 0;
-    norm = faceforward(norm, -r.direction, norm);
+    if (backface) {
+        norm *= -1;
+    }
     
     return {true, backface, pos, norm};
 }
@@ -166,11 +168,16 @@ kernel void raytraceMain(acceleration_structure<instancing> as[[buffer(ACC_STRUC
         r.direction = bsdfSampleDiffuse(hit.normal, seed);
     }
     
-    float4 oldColor = outTex.read(gid.xy);
     float4 thisColor = float4(incomingLight, 1);
     
-    uint n = frameParams.frameIndex + 1;
-    float4 newColor = oldColor + (thisColor - oldColor) / float(n);
+    float4 newColor;
+    if (frameParams.frameIndex == 0) {
+        newColor = thisColor;
+    } else {
+        uint n = frameParams.frameIndex + 1;
+        float4 oldColor = outTex.read(gid.xy);
+        newColor = oldColor + (thisColor - oldColor) / float(n);
+    }
 
     outTex.write(newColor, gid.xy);
 }

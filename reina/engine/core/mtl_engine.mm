@@ -50,7 +50,7 @@ void MTLEngine::initDevice() {
 
 void MTLEngine::createBuffers() {
     simd::float4x4 proj = makePerspective(1.57f / 3.0f, float(WIDTH)/float(HEIGHT), 0.01f, 1e6);
-    simd::float4x4 view = lookAt(simd::float3{0, 0.5, -3}, simd::float3{0, 0.5, 0}, simd::float3{0, 1, 0});
+    simd::float4x4 view = lookAt(simd::float3{0, 1, -6}, simd::float3{0, 1.0, 0}, simd::float3{0, 1, 0});
     
     CameraData viewProjBufferContents{
         .invView = simd::inverse(view),
@@ -77,14 +77,14 @@ void MTLEngine::initWindow() {
     metalWindow = glfwGetCocoaWindow(glfwWindow);
     metalLayer = [CAMetalLayer layer];
     metalLayer.device = (__bridge id<MTLDevice>)metalDevice;
-    metalLayer.pixelFormat = MTLPixelFormatBGRA8Unorm_sRGB;
+    metalLayer.pixelFormat = MTLPixelFormatBGRA8Unorm;
     metalLayer.drawableSize = CGSizeMake(drawableWidth, drawableHeight);
     metalWindow.contentView.layer = metalLayer;
     metalWindow.contentView.wantsLayer = YES;
 }
 
 void MTLEngine::createAccStructs() {
-    model = std::make_unique<Model>(metalDevice, "assets/bunny.obj");
+    model = std::make_unique<Model>(metalDevice, "assets/cornell_box.obj");
     childAccStructs = std::vector<std::unique_ptr<TriangleAccelerationStructure>>{};
     
     childAccStructs.push_back(std::make_unique<TriangleAccelerationStructure>(metalDevice, metalCommandQueue, *model));
