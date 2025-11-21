@@ -1,37 +1,132 @@
 #include "scene.hpp"
 
 #include <set>
+#include <iostream>
 
 void Scene::addObject(const Object& object) {
-    // TODO: these need to be shared ptrs
-    objects.push_back(object);
+    objects.push_back(std::make_unique<Object>(object));
 }
 
 void Scene::addMaterial(const Material& material) {
-    materials.push_back(material);
+    materials.push_back(std::make_unique<Material>(material));
 }
 
-void Scene::build() {
-//    std::vector<Model*> models;
-//    std::vector<int> modelIndices;
-//    
-//    for (const Object& obj : objects) {
-//        int insertionIdx = -1;
-//        
-//        bool found = false;
-//        for (int i = 0; i < models.size(); i++) {
-//            if (models[i] == &obj.model) {
-//                insertionIdx = i;
-//                found = true;
-//                break;
-//            }
-//        }
-//        
-//        if (!found) {
-//            insertionIdx = models.size();
-//            models.push_back(&obj.model);
-//        }
-//    }
-//    
-//    
+void Scene::build(MTL::Device* device, MTL::CommandQueue* cmdQueue) {
+    createModelsVector();
+    buildModelDataBuffers(device, cmdQueue);
+    buildChildAccStructs(device, cmdQueue);
+    buildInstanceAccStruct(device, cmdQueue);
+}
+
+void Scene::buildChildAccStructs(MTL::Device* device, MTL::CommandQueue* cmdQueue) {
+    childAccStructs = std::vector<TriangleAccelerationStructure>{};
+    
+    for (const auto& model : models) {
+        childAccStructs.push_back(TriangleAccelerationStructure(device, cmdQueue, *model));
+    }
+}
+
+void Scene::buildInstanceAccStruct(MTL::Device* device, MTL::CommandQueue* cmdQueue) {
+    std::vector<MTL::AccelerationStructure*> accStructs(objects.size());
+    std::vector<simd::float4x4> transforms(objects.size());
+    for (int i = 0; i < objects.size(); i++) {
+        int accStructIdx = modelIndices[i];
+        accStructs[i] = childAccStructs[accStructIdx].getAccelerationStructure();
+        transforms[i] = objects[i]->transform;
+    }
+    
+    instanceAccStruct = std::make_unique<InstanceAccelerationStructure>(device, cmdQueue, accStructs, transforms);
+}
+
+void Scene::createModelsVector() {
+    models = std::vector<std::shared_ptr<Model>>{};
+    modelIndices = std::vector<int>{};
+    
+    for (const auto& obj : objects) {
+        int insertionIdx = -1;
+        
+        bool found = false;
+        for (int i = 0; i < models.size(); i++) {
+            if (models[i].get() == obj->model.get()) {
+                insertionIdx = i;
+                found = true;
+                break;
+            }
+        }
+        
+        if (!found) {
+            insertionIdx = static_cast<int>(models.size());
+            models.push_back(obj->model);
+        }
+        
+        modelIndices.push_back(insertionIdx);
+    }
+}
+
+void Scene::buildModelDataBuffers(MTL::Device* device, MTL::CommandQueue* cmdQueue) {
+    // First pass to see vertex and index buffer size
+    std::vector<size_t> modelIdxToIdxLoc(models.size());
+    size_t totalVertices = 0;
+    size_t totalIndices = 0;
+    
+    for (int i = 0; i < models.size(); i++) {
+        const auto& model = models[i];
+        
+        modelIdxToIdxLoc[i] = totalIndices;
+        totalVertices += model->getVertexCount();
+        totalIndices += model->getTriangleCount() * 3;
+    }
+    
+    // Second pass to build buffers and move data in
+    vertexBuffer = device->newBuffer(totalVertices * 3 * sizeof(float), MTL::ResourceStorageModePrivate);
+    std::cout << "Vertex buffer size: " << totalVertices * 3 * sizeof(float) << "\n";
+    indexBuffer = device->newBuffer(totalIndices * sizeof(int), MTL::ResourceStorageModePrivate);
+    
+    MTL::CommandBuffer* cmdBuffer = cmdQueue->commandBuffer();
+    MTL::BlitCommandEncoder* encoder = cmdBuffer->blitCommandEncoder();
+    
+    size_t currentVertex = 0;
+    size_t currentIndex = 0;
+    for (int i = 0; i < models.size(); i++) {
+        const auto& model = models[i];
+        
+        encoder->copyFromBuffer(model->getVertexBuffer(),
+                                0,
+                                vertexBuffer,
+                                currentVertex * 3 * sizeof(float),
+                                model->getVertexCount() * 3 * sizeof(float));
+        
+        encoder->copyFromBuffer(model->getIndexBuffer(),
+                                0,
+                                indexBuffer,
+                                currentIndex * sizeof(int),
+                                model->getTriangleCount() * 3 * sizeof(int));
+        
+        currentVertex += model->getVertexCount();
+        currentIndex += model->getTriangleCount() * 3;
+    }
+    
+    encoder->endEncoding();
+    cmdBuffer->commit();
+    cmdBuffer->waitUntilCompleted();
+    
+    // Final pass to construct the instanceIdxToIndexBufLocBuffer
+    std::vector<int> instanceIdxToIdxBufLoc(objects.size());
+    for (int i = 0; i < objects.size(); i++) {
+        instanceIdxToIdxBufLoc[i] = static_cast<int>(modelIdxToIdxLoc[modelIndices[i]]);
+    }
+    
+    instanceIdxToIdxBufLocBuffer = device->newBuffer(instanceIdxToIdxBufLoc.data(), instanceIdxToIdxBufLoc.size() * sizeof(int), MTL::ResourceStorageModeManaged);
+}
+
+MTL::Buffer* Scene::getVertexBuffer() {
+    return vertexBuffer;
+}
+
+MTL::Buffer* Scene::getIndexBuffer() {
+    return indexBuffer;
+}
+
+MTL::Buffer* Scene::getInstanceIdxToIdxBufLocBuffer() {
+    return instanceIdxToIdxBufLocBuffer;
 }

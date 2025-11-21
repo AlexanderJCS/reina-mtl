@@ -21,6 +21,7 @@
 #include "tri_acc_struct.hpp"
 #include "instance_acc_struct.hpp"
 #include "shared.hpp"
+#include "scene.hpp"
 
 #include <Metal/Metal.hpp>
 
@@ -64,7 +65,8 @@ private:
     NSWindow* metalWindow;
     CAMetalLayer* metalLayer;
     CA::MetalDrawable* metalDrawable;
-    std::unique_ptr<Model> model;
+    std::shared_ptr<Model> model;
+    std::unique_ptr<Scene> scene;
 
     MTL::Buffer* viewProjBuffer;
     MTL::ComputePipelineState* computePSO;

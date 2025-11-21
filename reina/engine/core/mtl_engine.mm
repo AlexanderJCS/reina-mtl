@@ -6,6 +6,7 @@
 #include "model.hpp"
 #include "tri_acc_struct.hpp"
 #include "matmath.hpp"
+#include "scene.hpp"
 
 
 void MTLEngine::init() {
@@ -85,11 +86,19 @@ void MTLEngine::initWindow() {
 }
 
 void MTLEngine::createAccStructs() {
-    model = std::make_unique<Model>(metalDevice, "assets/cornell_box.obj");
+    model = std::make_shared<Model>(metalDevice, "assets/cornell_box.obj");
     childAccStructs = std::vector<std::unique_ptr<TriangleAccelerationStructure>>{};
     
     childAccStructs.push_back(std::make_unique<TriangleAccelerationStructure>(metalDevice, metalCommandQueue, *model));
 //    childAccStructs.push_back(std::make_unique<TriangleAccelerationStructure>(metalDevice, metalCommandQueue, *model));
+    
+    simd::float4x4 transform1 = matrix_identity_float4x4;
+    
+    scene = std::make_unique<Scene>();
+    scene->addObject(Object{model, transform1});
+//    scene.addObject(Object{model});
+    scene->build(metalDevice, metalCommandQueue);
+    
     
     std::vector<MTL::AccelerationStructure*> subStructs;
     for (const std::unique_ptr<TriangleAccelerationStructure>& accStruct : childAccStructs) {

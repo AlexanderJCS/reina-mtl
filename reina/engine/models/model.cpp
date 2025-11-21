@@ -40,6 +40,7 @@ Model::Model(MTL::Device* device, const std::string& filepath) {
     );
     
     triangleCount = indexArray.size() / 3;
+    vertexCount = attrib.vertices.size() / 3;
 }
 
 MTL::Buffer* Model::getVertexBuffer() const {
@@ -52,4 +53,8 @@ MTL::Buffer* Model::getIndexBuffer() const {
 
 size_t Model::getTriangleCount() const {
     return triangleCount;
+}
+
+size_t Model::getVertexCount() const {
+    return vertexCount;
 }
