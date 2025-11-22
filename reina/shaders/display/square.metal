@@ -112,6 +112,11 @@ fragment float4 fragmentShader(VertexOut in [[stage_in]],
                                texture2d<float> colorTexture [[texture(0)]]) {
     constexpr sampler textureSampler(mag_filter::linear, min_filter::linear);
     float4 colorSample = colorTexture.sample(textureSampler, in.textureCoordinate);
+    
+#ifdef DEBUG_SHOW_NORMALS
+    return colorSample;
+#endif
+    
     float4 tonemapped = float4(agxEotf(float3(colorSample)), 1);
     return tonemapped;
 }

@@ -12,7 +12,7 @@ struct HitInfo {
     float3 normal;
 };
 
-HitInfo intersectScene(ray r, intersector<triangle_data, instancing> i, acceleration_structure<instancing> as, constant packed_float3* vertices, constant int* indices) {
+HitInfo intersectScene(ray r, intersector<triangle_data, instancing> i, acceleration_structure<instancing> as, device const packed_float3* vertices, device const int* indices, device const int* instanceIdxMap) {
     intersection_result<triangle_data, instancing> result = i.intersect(r, as);
     
     if (result.type != intersection_type::triangle) {
@@ -21,9 +21,11 @@ HitInfo intersectScene(ray r, intersector<triangle_data, instancing> i, accelera
     
 //    float2 bary = result.triangle_barycentric_coord;
     
-    int i0 = indices[result.primitive_id * 3];
-    int i1 = indices[result.primitive_id * 3 + 1];
-    int i2 = indices[result.primitive_id * 3 + 2];
+    int idxOffset = instanceIdxMap[result.instance_id];
+    
+    int i0 = indices[idxOffset + result.primitive_id * 3];
+    int i1 = indices[idxOffset + result.primitive_id * 3 + 1];
+    int i2 = indices[idxOffset + result.primitive_id * 3 + 2];
     
     float3 v0 = vertices[i0];
     float3 v1 = vertices[i1];
@@ -136,18 +138,21 @@ float3 skyColor(float3 dir) {
     return mix(float3(1, 1, 1), float3(0.3, 0.5, 1.0), saturate(dir.y * 0.5 + 0.5));
 }
 
-float3 runRaytrace(ray r, intersector<triangle_data, instancing> i, constant packed_float3* vertices,
-                   constant int* indices, acceleration_structure<instancing> as, thread uint& seed) {
+float3 runRaytrace(ray r, intersector<triangle_data, instancing> i, device const packed_float3* vertices, device const int* instanceIdxMap, device const int* indices, acceleration_structure<instancing> as, thread uint& seed) {
     float3 throughput = float3(1);
     float3 incomingLight = float3(0);
     
     for (int tracedSegments = 0; tracedSegments < 16; tracedSegments++) {
-        HitInfo hit = intersectScene(r, i, as, vertices, indices);
+        HitInfo hit = intersectScene(r, i, as, vertices, indices, instanceIdxMap);
         
         if (!hit.hit) {
             incomingLight += skyColor(r.direction) * throughput;
             break;
         }
+        
+#ifdef DEBUG_SHOW_NORMALS
+        return hit.normal;
+#endif
         
         float3 albedo = float3(0.9, 0.9, 0.9);
         throughput *= albedo;
@@ -162,11 +167,18 @@ float3 runRaytrace(ray r, intersector<triangle_data, instancing> i, constant pac
 
 kernel void raytraceMain(acceleration_structure<instancing> as[[buffer(ACC_STRUCT_BUFFER_IDX)]],
                          constant CameraData& matrices [[buffer(CAMERA_BUFFER_IDX)]],
-                         constant packed_float3* vertices [[buffer(VERTICES_BUFFER_IDX)]],
-                         constant int* indices [[buffer(INDICES_BUFFER_IDX)]],
+                         device const packed_float3* vertices [[buffer(VERTICES_BUFFER_IDX)]],
+                         device const int* indices [[buffer(INDICES_BUFFER_IDX)]],
+                         device const int* instanceIdxMap [[buffer(INSTANCE_IDX_MAP_BUFFER_IDX)]],
                          constant FrameParams& frameParams [[buffer(FRAME_PARAMS_BUFFER_IDX)]],
                          texture2d<float, access::read_write> outTex [[texture(0)]],
                          uint2 gid [[thread_position_in_grid]]) {
+#ifdef DEBUG_SHOW_NORMALS
+    uint raysPerBatch = 1;
+#else
+    uint raysPerBatch = frameParams.samplesPerBatch;
+#endif
+    
     uint width  = outTex.get_width();
     uint height = outTex.get_height();
 
@@ -182,19 +194,19 @@ kernel void raytraceMain(acceleration_structure<instancing> as[[buffer(ACC_STRUC
     ray r;
     
     float3 sum = float3(0);
-    for (uint i = 0; i < frameParams.samplesPerBatch; i++) {
+    for (uint i = 0; i < raysPerBatch; i++) {
         r = getStartingRay(seed, float2(gid), float2(width, height), matrices.invView, matrices.invProj);
-        sum += runRaytrace(r, intersect, vertices, indices, as, seed);
+        sum += runRaytrace(r, intersect, vertices, instanceIdxMap, indices, as, seed);
     }
     
-    float4 thisColor = float4(sum / frameParams.samplesPerBatch, 1);
+    float4 thisColor = float4(sum / raysPerBatch, 1);
     
     float4 newColor;
     if (frameParams.frameIndex == 0) {
         newColor = thisColor;
     } else {
         float4 oldColor = outTex.read(gid.xy);
-        newColor = (oldColor * frameParams.frameIndex + thisColor) / float(frameParams.frameIndex + 1);
+        newColor = (oldColor * raysPerBatch + thisColor) / float(raysPerBatch + 1);
     }
 
     outTex.write(newColor, gid.xy);

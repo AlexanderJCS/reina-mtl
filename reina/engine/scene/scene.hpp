@@ -25,9 +25,11 @@ public:
     
     void build(MTL::Device* device, MTL::CommandQueue* cmdQueue);
     
-    MTL::Buffer* getVertexBuffer();
-    MTL::Buffer* getIndexBuffer();
-    MTL::Buffer* getInstanceIdxToIdxBufLocBuffer();
+    MTL::Buffer* getVertexBuffer() const;
+    MTL::Buffer* getIndexBuffer() const;
+    MTL::Buffer* getInstanceIdxMapBuffer() const;
+    const std::vector<TriangleAccelerationStructure>& getChildAccStructs() const;
+    const InstanceAccelerationStructure& getInstanceAccStruct() const;
     
 private:
     void createModelsVector();
@@ -45,7 +47,7 @@ private:
     
     MTL::Buffer* vertexBuffer;
     MTL::Buffer* indexBuffer;
-    MTL::Buffer* instanceIdxToIdxBufLocBuffer;  // TODO: rename this?
+    MTL::Buffer* instanceIdxMapBuffer;
 };
 
 #endif /* scene_hpp */

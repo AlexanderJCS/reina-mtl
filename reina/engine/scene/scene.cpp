@@ -79,8 +79,9 @@ void Scene::buildModelDataBuffers(MTL::Device* device, MTL::CommandQueue* cmdQue
     
     // Second pass to build buffers and move data in
     vertexBuffer = device->newBuffer(totalVertices * 3 * sizeof(float), MTL::ResourceStorageModePrivate);
-    std::cout << "Vertex buffer size: " << totalVertices * 3 * sizeof(float) << "\n";
+    vertexBuffer->setLabel(NS::String::string("Scene vertex bufer", NS::UTF8StringEncoding));
     indexBuffer = device->newBuffer(totalIndices * sizeof(int), MTL::ResourceStorageModePrivate);
+    indexBuffer->setLabel(NS::String::string("Scene index buffer", NS::UTF8StringEncoding));
     
     MTL::CommandBuffer* cmdBuffer = cmdQueue->commandBuffer();
     MTL::BlitCommandEncoder* encoder = cmdBuffer->blitCommandEncoder();
@@ -111,22 +112,30 @@ void Scene::buildModelDataBuffers(MTL::Device* device, MTL::CommandQueue* cmdQue
     cmdBuffer->waitUntilCompleted();
     
     // Final pass to construct the instanceIdxToIndexBufLocBuffer
-    std::vector<int> instanceIdxToIdxBufLoc(objects.size());
+    std::vector<int> instanceIdxMap(objects.size());
     for (int i = 0; i < objects.size(); i++) {
-        instanceIdxToIdxBufLoc[i] = static_cast<int>(modelIdxToIdxLoc[modelIndices[i]]);
+        instanceIdxMap[i] = static_cast<int>(modelIdxToIdxLoc[modelIndices[i]]);
     }
     
-    instanceIdxToIdxBufLocBuffer = device->newBuffer(instanceIdxToIdxBufLoc.data(), instanceIdxToIdxBufLoc.size() * sizeof(int), MTL::ResourceStorageModeManaged);
+    instanceIdxMapBuffer = device->newBuffer(instanceIdxMap.data(), instanceIdxMap.size() * sizeof(int), MTL::ResourceStorageModeManaged);
 }
 
-MTL::Buffer* Scene::getVertexBuffer() {
+MTL::Buffer* Scene::getVertexBuffer() const {
     return vertexBuffer;
 }
 
-MTL::Buffer* Scene::getIndexBuffer() {
+MTL::Buffer* Scene::getIndexBuffer() const {
     return indexBuffer;
 }
 
-MTL::Buffer* Scene::getInstanceIdxToIdxBufLocBuffer() {
-    return instanceIdxToIdxBufLocBuffer;
+MTL::Buffer* Scene::getInstanceIdxMapBuffer() const {
+    return instanceIdxMapBuffer;
+}
+
+const std::vector<TriangleAccelerationStructure>& Scene::getChildAccStructs() const {
+    return childAccStructs;
+}
+
+const InstanceAccelerationStructure& Scene::getInstanceAccStruct() const {
+    return *instanceAccStruct;
 }
