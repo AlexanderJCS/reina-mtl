@@ -97,7 +97,7 @@ void MTLEngine::createAccStructs() {
     simd::float4x4 transform2 = translate(matrix_identity_float4x4, simd::float3{1.5, 0, 0});
     
     scene = std::make_unique<Scene>();
-//    scene->addObject(Object{std::make_shared<Model>(cornell), transform2});
+    scene->addObject(Object{std::make_shared<Model>(cornell), transform2});
     scene->addObject(Object{std::make_shared<Model>(cornell), transform1});
     scene->addObject(Object{std::make_shared<Model>(bunny), matrix_identity_float4x4});
     scene->build(metalDevice, metalCommandQueue);

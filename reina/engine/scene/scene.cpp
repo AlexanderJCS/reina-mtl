@@ -80,14 +80,13 @@ void Scene::buildModelDataBuffers(MTL::Device* device, MTL::CommandQueue* cmdQue
     // Second pass to build buffers and move data in
     vertexBuffer = device->newBuffer(totalVertices * 3 * sizeof(float), MTL::ResourceStorageModePrivate);
     vertexBuffer->setLabel(NS::String::string("Scene vertex bufer", NS::UTF8StringEncoding));
-    indexBuffer = device->newBuffer(totalIndices * sizeof(int), MTL::ResourceStorageModePrivate);
-    indexBuffer->setLabel(NS::String::string("Scene index buffer", NS::UTF8StringEncoding));
-    
+ 
     MTL::CommandBuffer* cmdBuffer = cmdQueue->commandBuffer();
     MTL::BlitCommandEncoder* encoder = cmdBuffer->blitCommandEncoder();
     
     size_t currentVertex = 0;
     size_t currentIndex = 0;
+    std::vector<uint32_t> idxData(totalIndices);
     for (int i = 0; i < models.size(); i++) {
         const auto& model = models[i];
         
@@ -97,12 +96,10 @@ void Scene::buildModelDataBuffers(MTL::Device* device, MTL::CommandQueue* cmdQue
                                 currentVertex * 3 * sizeof(float),
                                 model->getVertexCount() * 3 * sizeof(float));
         
-        // TODO: PROBLEM - indices are not added by currentVertex, which causes indices to reference wrong object data for model index > 0
-        encoder->copyFromBuffer(model->getIndexBuffer(),
-                                0,
-                                indexBuffer,
-                                currentIndex * sizeof(int),
-                                model->getTriangleCount() * 3 * sizeof(int));
+        const std::vector<uint32_t> modelIndices = model->getIndices();
+        for (int j = 0; j < modelIndices.size(); j++) {
+            idxData[j + currentIndex] = modelIndices[j] + static_cast<uint32_t>(currentVertex);
+        }
         
         currentVertex += model->getVertexCount();
         currentIndex += model->getTriangleCount() * 3;
@@ -116,10 +113,13 @@ void Scene::buildModelDataBuffers(MTL::Device* device, MTL::CommandQueue* cmdQue
     std::vector<int> instanceIdxMap(objects.size());
     for (int i = 0; i < objects.size(); i++) {
         instanceIdxMap[i] = static_cast<int>(modelIdxToIdxLoc[modelIndices[i]]);
-        std::cout << "instanceIdxMap[" << i << "]: " << instanceIdxMap[i] << "\n";
     }
     
+    indexBuffer = device->newBuffer(idxData.data(), idxData.size() * sizeof(uint32_t), MTL::ResourceStorageModeShared);
+    indexBuffer->setLabel(NS::String::string("Scene index buffer", NS::UTF8StringEncoding));
+    
     instanceIdxMapBuffer = device->newBuffer(instanceIdxMap.data(), instanceIdxMap.size() * sizeof(int), MTL::ResourceStorageModeManaged);
+    instanceIdxMapBuffer->setLabel(NS::String::string("Scene instance index map", NS::UTF8StringEncoding));
 }
 
 MTL::Buffer* Scene::getVertexBuffer() const {

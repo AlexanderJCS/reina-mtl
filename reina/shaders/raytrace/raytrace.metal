@@ -12,7 +12,7 @@ struct HitInfo {
     float3 normal;
 };
 
-HitInfo intersectScene(ray r, intersector<triangle_data, instancing> i, acceleration_structure<instancing> as, device const packed_float3* vertices, device const int* indices, device const int* instanceIdxMap) {
+HitInfo intersectScene(ray r, intersector<triangle_data, instancing> i, acceleration_structure<instancing> as, device const packed_float3* vertices, device const uint* indices, device const int* instanceIdxMap) {
     intersection_result<triangle_data, instancing> result = i.intersect(r, as);
     
     if (result.type != intersection_type::triangle) {
@@ -138,7 +138,7 @@ float3 skyColor(float3 dir) {
     return mix(float3(1, 1, 1), float3(0.3, 0.5, 1.0), saturate(dir.y * 0.5 + 0.5));
 }
 
-float3 runRaytrace(ray r, intersector<triangle_data, instancing> i, device const packed_float3* vertices, device const int* instanceIdxMap, device const int* indices, acceleration_structure<instancing> as, thread uint& seed) {
+float3 runRaytrace(ray r, intersector<triangle_data, instancing> i, device const packed_float3* vertices, device const int* instanceIdxMap, device const uint* indices, acceleration_structure<instancing> as, thread uint& seed) {
     float3 throughput = float3(1);
     float3 incomingLight = float3(0);
     
@@ -168,7 +168,7 @@ float3 runRaytrace(ray r, intersector<triangle_data, instancing> i, device const
 kernel void raytraceMain(acceleration_structure<instancing> as[[buffer(ACC_STRUCT_BUFFER_IDX)]],
                          constant CameraData& matrices [[buffer(CAMERA_BUFFER_IDX)]],
                          device const packed_float3* vertices [[buffer(VERTICES_BUFFER_IDX)]],
-                         device const int* indices [[buffer(INDICES_BUFFER_IDX)]],
+                         device const uint* indices [[buffer(INDICES_BUFFER_IDX)]],
                          device const int* instanceIdxMap [[buffer(INSTANCE_IDX_MAP_BUFFER_IDX)]],
                          constant FrameParams& frameParams [[buffer(FRAME_PARAMS_BUFFER_IDX)]],
                          texture2d<float, access::read_write> outTex [[texture(0)]],

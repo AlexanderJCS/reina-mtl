@@ -26,20 +26,18 @@ Model::Model(MTL::Device* device, const std::string& filepath) {
         MTL::ResourceStorageModeShared
     );
 
-    std::vector<uint32_t> indexArray;
-    indexArray.reserve(shape.mesh.indices.size());
-
-    for (const auto& idx : shape.mesh.indices) {
-        indexArray.push_back(static_cast<uint32_t>(idx.vertex_index));
+    indices = std::vector<uint32_t>(shape.mesh.indices.size());
+    for (int i = 0; i < shape.mesh.indices.size(); i++) {
+        indices[i] = shape.mesh.indices[i].vertex_index;
     }
     
     indexBuffer = device->newBuffer(
-        indexArray.data(),
-        indexArray.size() * sizeof(uint32_t),
+        indices.data(),
+        indices.size() * sizeof(uint32_t),
         MTL::ResourceStorageModeShared
     );
     
-    triangleCount = indexArray.size() / 3;
+    triangleCount = indices.size() / 3;
     vertexCount = attrib.vertices.size() / 3;
 }
 
@@ -57,4 +55,8 @@ size_t Model::getTriangleCount() const {
 
 size_t Model::getVertexCount() const {
     return vertexCount;
+}
+
+const std::vector<uint32_t> Model::getIndices() const {
+    return indices;
 }
