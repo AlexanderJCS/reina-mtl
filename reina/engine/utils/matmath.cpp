@@ -44,3 +44,8 @@ MTL::PackedFloat4x3 simdToMTL(simd::float4x4 m) {
     
     return out;
 }
+
+simd::float4x4 translate(simd::float4x4 mat, const simd::float3& translation) {
+    mat.columns[3].xyz = translation;
+    return mat;
+}

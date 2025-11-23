@@ -86,17 +86,20 @@ void MTLEngine::initWindow() {
 }
 
 void MTLEngine::createAccStructs() {
-    model = std::make_shared<Model>(metalDevice, "assets/cornell_box.obj");
+    Model cornell(metalDevice, "assets/cornell_box.obj");
+    Model bunny(metalDevice, "assets/bunny.obj");
     childAccStructs = std::vector<std::unique_ptr<TriangleAccelerationStructure>>{};
     
-    childAccStructs.push_back(std::make_unique<TriangleAccelerationStructure>(metalDevice, metalCommandQueue, *model));
-//    childAccStructs.push_back(std::make_unique<TriangleAccelerationStructure>(metalDevice, metalCommandQueue, *model));
+    childAccStructs.push_back(std::make_unique<TriangleAccelerationStructure>(metalDevice, metalCommandQueue, cornell));
+    //    childAccStructs.push_back(std::make_unique<TriangleAccelerationStructure>(metalDevice, metalCommandQueue, *model));
     
-    simd::float4x4 transform1 = matrix_identity_float4x4;
+    simd::float4x4 transform1 = translate(matrix_identity_float4x4, simd::float3{-1.5, 0, 0});
+    simd::float4x4 transform2 = translate(matrix_identity_float4x4, simd::float3{1.5, 0, 0});
     
     scene = std::make_unique<Scene>();
-    scene->addObject(Object{model, transform1});
-//    scene.addObject(Object{model});
+//    scene->addObject(Object{std::make_shared<Model>(cornell), transform2});
+    scene->addObject(Object{std::make_shared<Model>(cornell), transform1});
+    scene->addObject(Object{std::make_shared<Model>(bunny), matrix_identity_float4x4});
     scene->build(metalDevice, metalCommandQueue);
     
     

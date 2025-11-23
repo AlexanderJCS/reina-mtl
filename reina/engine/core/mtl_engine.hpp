@@ -65,7 +65,6 @@ private:
     NSWindow* metalWindow;
     CAMetalLayer* metalLayer;
     CA::MetalDrawable* metalDrawable;
-    std::shared_ptr<Model> model;
     std::unique_ptr<Scene> scene;
 
     MTL::Buffer* viewProjBuffer;

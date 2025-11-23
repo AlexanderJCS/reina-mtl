@@ -4,7 +4,7 @@
     #define SHARED_CONST constexpr
 #endif
 
-// #define DEBUG_SHOW_NORMALS
+#define DEBUG_SHOW_NORMALS
 
 SHARED_CONST uint ACC_STRUCT_BUFFER_IDX = 0;
 SHARED_CONST uint CAMERA_BUFFER_IDX = 1;
