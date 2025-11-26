@@ -1,3 +1,6 @@
+#ifndef SHARED
+#define SHARED
+
 #ifdef __METAL_VERSION__
     #define SHARED_CONST constant
 #else
@@ -36,3 +39,15 @@ struct VertexData {
     MATH_PREFIX::float2 textureCoordinate;
 };
 
+struct Material {
+    uint32_t materialID;
+    MATH_PREFIX::float3 color;
+    float roughness;
+};
+
+struct InstanceData {
+    uint32_t indexOffset;
+    uint32_t materialID;
+};
+
+#endif // !SHARED

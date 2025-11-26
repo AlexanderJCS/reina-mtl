@@ -3,11 +3,8 @@
 #include <set>
 #include <iostream>
 
-void Scene::addObject(const Object& object) {
+void Scene::addObject(const Object& object, const Material& material) {
     objects.push_back(std::make_unique<Object>(object));
-}
-
-void Scene::addMaterial(const Material& material) {
     materials.push_back(std::make_unique<Material>(material));
 }
 
@@ -115,9 +112,11 @@ void Scene::buildModelDataBuffers(MTL::Device* device, MTL::CommandQueue* cmdQue
         instanceIdxMap[i] = static_cast<int>(modelIdxToIdxLoc[modelIndices[i]]);
     }
     
+    // Create index buffer
     indexBuffer = device->newBuffer(idxData.data(), idxData.size() * sizeof(uint32_t), MTL::ResourceStorageModeShared);
     indexBuffer->setLabel(NS::String::string("Scene index buffer", NS::UTF8StringEncoding));
     
+    // Create instance index map buffer
     instanceIdxMapBuffer = device->newBuffer(instanceIdxMap.data(), instanceIdxMap.size() * sizeof(int), MTL::ResourceStorageModeManaged);
     instanceIdxMapBuffer->setLabel(NS::String::string("Scene instance index map", NS::UTF8StringEncoding));
 }

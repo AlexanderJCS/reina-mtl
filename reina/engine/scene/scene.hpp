@@ -5,7 +5,7 @@
 #include <simd/simd.h>
 #include <Metal/Metal.hpp>
 
-#include "material.hpp"
+#include "shared.hpp"
 #include "model.hpp"
 #include "tri_acc_struct.hpp"
 #include "instance_acc_struct.hpp"
@@ -20,8 +20,7 @@ class Scene {
 public:
     Scene() {}
     
-    void addObject(const Object& object);
-    void addMaterial(const Material& material);
+    void addObject(const Object& object, const Material& material);
     
     void build(MTL::Device* device, MTL::CommandQueue* cmdQueue);
     
@@ -48,6 +47,7 @@ private:
     MTL::Buffer* vertexBuffer;
     MTL::Buffer* indexBuffer;
     MTL::Buffer* instanceIdxMapBuffer;
+    MTL::Buffer* materialBuffer;
 };
 
 #endif /* scene_hpp */
