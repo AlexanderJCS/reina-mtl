@@ -3,6 +3,8 @@
 #include <set>
 #include <iostream>
 
+#include "buffers.hpp"
+
 void Scene::addObject(const std::shared_ptr<Model>& model, const std::shared_ptr<Material>& material, simd::float4x4 transform) {
     instanceTransforms.push_back(transform);
     
@@ -116,11 +118,14 @@ void Scene::buildModelDataBuffers(MTL::Device* device, MTL::CommandQueue* cmdQue
     cmdBuffer->waitUntilCompleted();
     
     // Create index buffer
-    indexBuffer = device->newBuffer(idxData.data(), idxData.size() * sizeof(uint32_t), MTL::ResourceStorageModeShared);
+    indexBuffer = makePrivateBuffer(device, cmdQueue, idxData.data(), static_cast<uint32_t>(idxData.size() * sizeof(uint32_t)));
     indexBuffer->setLabel(NS::String::string("Scene index buffer", NS::UTF8StringEncoding));
     
-    // Create instance index map buffer
-    instanceDataBuffer = device->newBuffer(instanceDataVec.data(), instanceDataVec.size() * sizeof(InstanceData), MTL::ResourceStorageModeManaged);
+    // Create material buffer
+    materialBuffer = makePrivateBuffer(device, cmdQueue, materials.data(), static_cast<uint32_t>(materials.size() * sizeof(Material)));
+    
+    // Create instance data buffer
+    instanceDataBuffer = makePrivateBuffer(device, cmdQueue, instanceDataVec.data(), static_cast<uint32_t>(instanceDataVec.size() * sizeof(InstanceData)));
     instanceDataBuffer->setLabel(NS::String::string("Scene instance index map", NS::UTF8StringEncoding));
 }
 

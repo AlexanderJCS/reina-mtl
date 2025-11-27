@@ -2,7 +2,7 @@
 
 MTL::Buffer* makePrivateBuffer(MTL::Device* device, MTL::CommandQueue* cmdQueue, void* data, uint32_t size) {
     MTL::Buffer* staging = device->newBuffer(data, size, MTL::StorageModeShared);
-    MTL::Buffer* dst = device->newBuffer(size, MTL::StorageModePrivate);
+    MTL::Buffer* dst = device->newBuffer(size, MTL::ResourceStorageModePrivate);
     
     MTL::CommandBuffer* cmdBuffer = cmdQueue->commandBuffer();
     MTL::BlitCommandEncoder* blit = cmdBuffer->blitCommandEncoder();
