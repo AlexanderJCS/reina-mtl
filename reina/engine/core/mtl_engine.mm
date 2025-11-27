@@ -97,11 +97,11 @@ void MTLEngine::createAccStructs() {
     simd::float4x4 transform2 = translate(matrix_identity_float4x4, simd::float3{1.5, 0, 0});
     
     scene = std::make_unique<Scene>();
-    scene->addObject(Object{std::make_shared<Model>(cornell), transform2});
-    scene->addObject(Object{std::make_shared<Model>(cornell), transform1});
-    scene->addObject(Object{std::make_shared<Model>(bunny), matrix_identity_float4x4});
+    Material material{0, simd::float3(0.9), 0};
+    scene->addObject(std::make_shared<Model>(cornell), std::make_shared<Material>(material), transform1);
+    scene->addObject(std::make_shared<Model>(cornell), std::make_shared<Material>(material), transform2);
+    scene->addObject(std::make_shared<Model>(bunny), std::make_shared<Material>(material), matrix_identity_float4x4);
     scene->build(metalDevice, metalCommandQueue);
-    
     
     std::vector<MTL::AccelerationStructure*> subStructs;
     for (const std::unique_ptr<TriangleAccelerationStructure>& accStruct : childAccStructs) {
@@ -192,7 +192,7 @@ void MTLEngine::runRaytrace() {
     encoder->setBuffer(scene->getVertexBuffer(), 0, VERTICES_BUFFER_IDX);
     encoder->setBuffer(scene->getIndexBuffer(), 0, INDICES_BUFFER_IDX);
     encoder->setBuffer(frameParamsBuffer, 0, FRAME_PARAMS_BUFFER_IDX);
-    encoder->setBuffer(scene->getInstanceIdxMapBuffer(), 0, INSTANCE_IDX_MAP_BUFFER_IDX);
+    encoder->setBuffer(scene->getInstanceDataBuffer(), 0, INSTANCE_DATA_BUFFER_IDX);
     
     MTL::Size gridSize = MTL::Size(rayTracingOutput->width, rayTracingOutput->height, 1);
     MTL::Size threadgroupSize = MTL::Size(8, 8, 1);

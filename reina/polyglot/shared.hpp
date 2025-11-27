@@ -14,7 +14,7 @@ SHARED_CONST uint CAMERA_BUFFER_IDX = 1;
 SHARED_CONST uint VERTICES_BUFFER_IDX = 2;
 SHARED_CONST uint INDICES_BUFFER_IDX = 3;
 SHARED_CONST uint FRAME_PARAMS_BUFFER_IDX = 4;
-SHARED_CONST uint INSTANCE_IDX_MAP_BUFFER_IDX = 5;
+SHARED_CONST uint INSTANCE_DATA_BUFFER_IDX = 5;
 
 #ifdef __METAL_VERSION__
     #include <metal_stdlib>
@@ -47,7 +47,7 @@ struct Material {
 
 struct InstanceData {
     uint32_t indexOffset;
-    uint32_t materialID;
+    uint32_t materialIdx;
 };
 
 #endif // !SHARED

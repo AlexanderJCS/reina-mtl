@@ -11,42 +11,36 @@
 #include "instance_acc_struct.hpp"
 
 
-struct Object {
-    std::shared_ptr<Model> model;
-    simd::float4x4 transform;
-};
-
 class Scene {
 public:
     Scene() {}
     
-    void addObject(const Object& object, const Material& material);
+    void addObject(const std::shared_ptr<Model>& model, const std::shared_ptr<Material>& material, simd::float4x4 transform);
     
     void build(MTL::Device* device, MTL::CommandQueue* cmdQueue);
     
     MTL::Buffer* getVertexBuffer() const;
     MTL::Buffer* getIndexBuffer() const;
-    MTL::Buffer* getInstanceIdxMapBuffer() const;
+    MTL::Buffer* getInstanceDataBuffer() const;
     const std::vector<TriangleAccelerationStructure>& getChildAccStructs() const;
     const InstanceAccelerationStructure& getInstanceAccStruct() const;
     
 private:
-    void createModelsVector();
     void buildModelDataBuffers(MTL::Device* device, MTL::CommandQueue* cmdQueue);
     void buildChildAccStructs(MTL::Device* device, MTL::CommandQueue* cmdQueue);
     void buildInstanceAccStruct(MTL::Device* device, MTL::CommandQueue* cmdQueue);
     
-    std::vector<std::unique_ptr<Material>> materials;
-    std::vector<std::unique_ptr<Object>> objects;
-    
+    std::vector<std::shared_ptr<Material>> materials;
     std::vector<std::shared_ptr<Model>> models;
     std::vector<int> modelIndices;
     std::vector<TriangleAccelerationStructure> childAccStructs;
     std::unique_ptr<InstanceAccelerationStructure> instanceAccStruct;
+    std::vector<InstanceData> instanceDataVec;
+    std::vector<simd::float4x4> instanceTransforms;
     
     MTL::Buffer* vertexBuffer;
     MTL::Buffer* indexBuffer;
-    MTL::Buffer* instanceIdxMapBuffer;
+    MTL::Buffer* instanceDataBuffer;
     MTL::Buffer* materialBuffer;
 };
 

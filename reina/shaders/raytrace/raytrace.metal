@@ -12,7 +12,7 @@ struct HitInfo {
     float3 normal;
 };
 
-HitInfo intersectScene(ray r, intersector<triangle_data, instancing> i, acceleration_structure<instancing> as, device const packed_float3* vertices, device const uint* indices, device const int* instanceIdxMap) {
+HitInfo intersectScene(ray r, intersector<triangle_data, instancing> i, acceleration_structure<instancing> as, device const packed_float3* vertices, device const uint* indices, device const InstanceData* instanceData) {
     intersection_result<triangle_data, instancing> result = i.intersect(r, as);
     
     if (result.type != intersection_type::triangle) {
@@ -21,7 +21,7 @@ HitInfo intersectScene(ray r, intersector<triangle_data, instancing> i, accelera
     
 //    float2 bary = result.triangle_barycentric_coord;
     
-    int idxOffset = instanceIdxMap[result.instance_id];
+    int idxOffset = instanceData[result.instance_id].indexOffset;
     
     int i0 = indices[idxOffset + result.primitive_id * 3];
     int i1 = indices[idxOffset + result.primitive_id * 3 + 1];
@@ -138,12 +138,12 @@ float3 skyColor(float3 dir) {
     return mix(float3(1, 1, 1), float3(0.3, 0.5, 1.0), saturate(dir.y * 0.5 + 0.5));
 }
 
-float3 runRaytrace(ray r, intersector<triangle_data, instancing> i, device const packed_float3* vertices, device const int* instanceIdxMap, device const uint* indices, acceleration_structure<instancing> as, thread uint& seed) {
+float3 runRaytrace(ray r, intersector<triangle_data, instancing> i, device const packed_float3* vertices, device const InstanceData* instanceData, device const uint* indices, acceleration_structure<instancing> as, thread uint& seed) {
     float3 throughput = float3(1);
     float3 incomingLight = float3(0);
     
     for (int tracedSegments = 0; tracedSegments < 16; tracedSegments++) {
-        HitInfo hit = intersectScene(r, i, as, vertices, indices, instanceIdxMap);
+        HitInfo hit = intersectScene(r, i, as, vertices, indices, instanceData);
         
         if (!hit.hit) {
             incomingLight += skyColor(r.direction) * throughput;
@@ -169,7 +169,7 @@ kernel void raytraceMain(acceleration_structure<instancing> as[[buffer(ACC_STRUC
                          constant CameraData& matrices [[buffer(CAMERA_BUFFER_IDX)]],
                          device const packed_float3* vertices [[buffer(VERTICES_BUFFER_IDX)]],
                          device const uint* indices [[buffer(INDICES_BUFFER_IDX)]],
-                         device const int* instanceIdxMap [[buffer(INSTANCE_IDX_MAP_BUFFER_IDX)]],
+                         device const InstanceData* instanceData [[buffer(INSTANCE_DATA_BUFFER_IDX)]],
                          constant FrameParams& frameParams [[buffer(FRAME_PARAMS_BUFFER_IDX)]],
                          texture2d<float, access::read_write> outTex [[texture(0)]],
                          uint2 gid [[thread_position_in_grid]]) {
@@ -196,7 +196,7 @@ kernel void raytraceMain(acceleration_structure<instancing> as[[buffer(ACC_STRUC
     float3 sum = float3(0);
     for (uint i = 0; i < raysPerBatch; i++) {
         r = getStartingRay(seed, float2(gid), float2(width, height), matrices.invView, matrices.invProj);
-        sum += runRaytrace(r, intersect, vertices, instanceIdxMap, indices, as, seed);
+        sum += runRaytrace(r, intersect, vertices, instanceData, indices, as, seed);
     }
     
     float4 thisColor = float4(sum / raysPerBatch, 1);
