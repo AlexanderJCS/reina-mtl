@@ -11,5 +11,7 @@ MTL::Buffer* makePrivateBuffer(MTL::Device* device, MTL::CommandQueue* cmdQueue,
     cmdBuffer->commit();
     cmdBuffer->waitUntilCompleted();
     
+    staging->release();
+    
     return dst;
 }

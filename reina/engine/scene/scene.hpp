@@ -22,6 +22,7 @@ public:
     MTL::Buffer* getVertexBuffer() const;
     MTL::Buffer* getIndexBuffer() const;
     MTL::Buffer* getInstanceDataBuffer() const;
+    MTL::Buffer* getMaterialBuffer() const;
     const std::vector<TriangleAccelerationStructure>& getChildAccStructs() const;
     const InstanceAccelerationStructure& getInstanceAccStruct() const;
     
