@@ -156,7 +156,7 @@ float3 runRaytrace(ray r, intersector<triangle_data, instancing> i, device const
         return hit.normal;
 #endif
         
-        throughput *= float3(0.9);
+        throughput *= hit.mat.color;
         incomingLight += float3(0) * throughput;
         
         r.origin = hit.pos + hit.normal * 0.0001;

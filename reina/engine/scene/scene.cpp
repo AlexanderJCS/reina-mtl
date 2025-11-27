@@ -124,7 +124,12 @@ void Scene::buildModelDataBuffers(MTL::Device* device, MTL::CommandQueue* cmdQue
     indexBuffer->setLabel(NS::String::string("Scene index buffer", NS::UTF8StringEncoding));
     
     // Create material buffer
-    materialBuffer = makePrivateBuffer(device, cmdQueue, materials.data(), static_cast<uint32_t>(materials.size() * sizeof(Material)));
+    std::vector<Material> materialNoPtrs(materials.size());
+    for (size_t i = 0; i < materials.size(); i++) {
+        materialNoPtrs[i] = *materials[i];
+    }
+    
+    materialBuffer = makePrivateBuffer(device, cmdQueue, materialNoPtrs.data(), static_cast<uint32_t>(materialNoPtrs.size() * sizeof(Material)));
     
     // Create instance data buffer
     instanceDataBuffer = makePrivateBuffer(device, cmdQueue, instanceDataVec.data(), static_cast<uint32_t>(instanceDataVec.size() * sizeof(InstanceData)));
