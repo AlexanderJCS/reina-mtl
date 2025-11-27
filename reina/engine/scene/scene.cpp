@@ -27,13 +27,13 @@ void Scene::addObject(const std::shared_ptr<Model>& model, const std::shared_ptr
     bool foundModel = false;
     uint32_t totalIndices = 0;
     for (uint32_t i = 0; i < models.size(); i++) {
-        totalIndices += models[i]->getTriangleCount() * 3;
-        
         if (models[i] == model) {
             foundModel = true;
             modelIndices.push_back(i);
             break;
         }
+        
+        totalIndices += models[i]->getTriangleCount() * 3;
     }
     
     instanceData.indexOffset = totalIndices;
@@ -60,9 +60,11 @@ void Scene::buildChildAccStructs(MTL::Device* device, MTL::CommandQueue* cmdQueu
 }
 
 void Scene::buildInstanceAccStruct(MTL::Device* device, MTL::CommandQueue* cmdQueue) {
-    std::vector<MTL::AccelerationStructure*> accStructs(childAccStructs.size());
-    std::vector<simd::float4x4> transforms(instanceDataVec.size());
-    for (int i = 0; i < childAccStructs.size(); i++) {
+    size_t instanceCount = modelIndices.size();
+    
+    std::vector<MTL::AccelerationStructure*> accStructs(instanceCount);
+    std::vector<simd::float4x4> transforms(instanceCount);
+    for (int i = 0; i < instanceCount; i++) {
         int accStructIdx = modelIndices[i];
         accStructs[i] = childAccStructs[accStructIdx].getAccelerationStructure();
         transforms[i] = instanceTransforms[i];
@@ -147,4 +149,8 @@ const std::vector<TriangleAccelerationStructure>& Scene::getChildAccStructs() co
 
 const InstanceAccelerationStructure& Scene::getInstanceAccStruct() const {
     return *instanceAccStruct;
+}
+
+MTL::Buffer* Scene::getMaterialBuffer() const {
+    return materialBuffer;
 }
