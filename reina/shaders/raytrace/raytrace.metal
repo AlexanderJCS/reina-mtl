@@ -10,19 +10,18 @@ struct HitInfo {
     bool backface;
     float3 pos;
     float3 normal;
-    Material mat;
+    uint32_t materialIdx;
 };
 
 HitInfo intersectScene(ray r, intersector<triangle_data, instancing> i, acceleration_structure<instancing> as, device const packed_float3* vertices, device const uint* indices, device const Material* materials, device const InstanceData* instanceData) {
     intersection_result<triangle_data, instancing> result = i.intersect(r, as);
     
     if (result.type != intersection_type::triangle) {
-        return {false, false, float3(0), float3(0), Material{}};
+        return {false, false, float3(0), float3(0), 0};
     }
     
-//    float2 bary = result.triangle_barycentric_coord;
+    // float2 bary = result.triangle_barycentric_coord;
     
-    Material mat = materials[instanceData[result.instance_id].materialIdx];
     int idxOffset = instanceData[result.instance_id].indexOffset;
     
     int i0 = indices[idxOffset + result.primitive_id * 3];
@@ -41,7 +40,7 @@ HitInfo intersectScene(ray r, intersector<triangle_data, instancing> i, accelera
         norm *= -1;
     }
     
-    return {true, backface, pos, norm, mat};
+    return {true, backface, pos, norm, instanceData[result.instance_id].materialIdx};
 }
 
 uint hash(uint x) {
@@ -156,7 +155,7 @@ float3 runRaytrace(ray r, intersector<triangle_data, instancing> i, device const
         return hit.normal;
 #endif
         
-        throughput *= hit.mat.color;
+        throughput *= materials[hit.materialIdx].color;
         incomingLight += float3(0) * throughput;
         
         r.origin = hit.pos + hit.normal * 0.0001;
