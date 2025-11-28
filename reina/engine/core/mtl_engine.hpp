@@ -78,5 +78,6 @@ private:
     MTL::Buffer* frameParamsBuffer;
     FrameParams frameParams;
 
-    Texture* rayTracingOutput;
+    std::unique_ptr<Texture> rtPing;
+    std::unique_ptr<Texture> rtPong;
 };

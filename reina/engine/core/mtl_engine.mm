@@ -2,6 +2,7 @@
 
 #include <simd/simd.h>
 #include <iostream>
+#include <chrono>
 
 #include "model.hpp"
 #include "tri_acc_struct.hpp"
@@ -32,7 +33,13 @@ void MTLEngine::run() {
     while (!glfwWindowShouldClose(glfwWindow)) {
         @autoreleasepool {
             metalDrawable = (__bridge CA::MetalDrawable*)[metalLayer nextDrawable];
-            draw();
+            auto start = std::chrono::steady_clock::now();
+            runRaytrace();
+            auto end = std::chrono::steady_clock::now();
+            sendRenderCommand();
+            
+            std::chrono::duration<double> elapsed = end - start;
+            std::cout << "Time: " << elapsed.count() * 1000 << " ms\n";
         }
         
         updateBuffers();
@@ -127,7 +134,8 @@ void MTLEngine::createSquare() {
 
     squareVertexBuffer = metalDevice->newBuffer(&squareVertices, sizeof(squareVertices), MTL::ResourceStorageModeShared);
 
-    rayTracingOutput = new Texture(metalDevice, drawableWidth, drawableHeight, 4, MTL::PixelFormatRGBA32Float, MTL::TextureUsageShaderRead | MTL::TextureUsageShaderWrite);
+    rtPing = std::make_unique<Texture>(metalDevice, drawableWidth, drawableHeight, 4, MTL::PixelFormatRGBA32Float, MTL::TextureUsageShaderRead | MTL::TextureUsageShaderWrite);
+    rtPong = std::make_unique<Texture>(metalDevice, drawableWidth, drawableHeight, 4, MTL::PixelFormatRGBA32Float, MTL::TextureUsageShaderRead | MTL::TextureUsageShaderWrite);
 }
 
 
@@ -172,11 +180,6 @@ void MTLEngine::createRenderPipeline() {
     renderPipelineDescriptor->release();
 }
 
-void MTLEngine::draw() {
-    runRaytrace();
-    sendRenderCommand();
-}
-
 void MTLEngine::runRaytrace() {
     MTL::CommandBuffer* commandBuffer = metalCommandQueue->commandBuffer();
     MTL::ComputeCommandEncoder* encoder = commandBuffer->computeCommandEncoder();
@@ -186,7 +189,8 @@ void MTLEngine::runRaytrace() {
     }
 
     encoder->setComputePipelineState(computePSO);
-    encoder->setTexture(rayTracingOutput->texture, 0);
+    encoder->setTexture(rtPing->texture, INPUT_TEXTURE_IDX);
+    encoder->setTexture(rtPong->texture, OUTPUT_TEXTURE_IDX);
     encoder->setAccelerationStructure(scene->getInstanceAccStruct().getAccelerationStructure(), ACC_STRUCT_BUFFER_IDX);
     encoder->setBuffer(viewProjBuffer, 0, CAMERA_BUFFER_IDX);
     encoder->setBuffer(scene->getVertexBuffer(), 0, VERTICES_BUFFER_IDX);
@@ -195,13 +199,15 @@ void MTLEngine::runRaytrace() {
     encoder->setBuffer(scene->getInstanceDataBuffer(), 0, INSTANCE_DATA_BUFFER_IDX);
     encoder->setBuffer(scene->getMaterialBuffer(), 0, MATERIAL_BUFFER_IDX);
     
-    MTL::Size gridSize = MTL::Size(rayTracingOutput->width, rayTracingOutput->height, 1);
+    MTL::Size gridSize = MTL::Size(rtPing->width, rtPing->height, 1);
     MTL::Size threadgroupSize = MTL::Size(8, 8, 1);
     encoder->dispatchThreads(gridSize, threadgroupSize);
 
     encoder->endEncoding();
     commandBuffer->commit();
     commandBuffer->waitUntilCompleted();
+    
+    std::swap(rtPing, rtPong);
 }
 
 void MTLEngine::sendRenderCommand() {
@@ -231,6 +237,6 @@ void MTLEngine::encodeRenderCommand(MTL::RenderCommandEncoder* renderCommandEnco
     MTL::PrimitiveType typeTriangle = MTL::PrimitiveTypeTriangle;
     NS::UInteger vertexStart = 0;
     NS::UInteger vertexCount = 6;
-    renderCommandEncoder->setFragmentTexture(rayTracingOutput->texture, 0);
+    renderCommandEncoder->setFragmentTexture(rtPing->texture, 0);
     renderCommandEncoder->drawPrimitives(typeTriangle, vertexStart, vertexCount);
 }

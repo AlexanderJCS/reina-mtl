@@ -173,7 +173,8 @@ kernel void raytraceMain(acceleration_structure<instancing> as[[buffer(ACC_STRUC
                          device const InstanceData* instanceData [[buffer(INSTANCE_DATA_BUFFER_IDX)]],
                          device const Material* materials [[buffer(MATERIAL_BUFFER_IDX)]],
                          constant FrameParams& frameParams [[buffer(FRAME_PARAMS_BUFFER_IDX)]],
-                         texture2d<float, access::read_write> outTex [[texture(0)]],
+                         texture2d<float, access::read_write> inTex [[texture(INPUT_TEXTURE_IDX)]],
+                         texture2d<float, access::read_write> outTex [[texture(OUTPUT_TEXTURE_IDX)]],
                          uint2 gid [[thread_position_in_grid]]) {
 #ifdef DEBUG_SHOW_NORMALS
     uint raysPerBatch = 1;
@@ -207,7 +208,7 @@ kernel void raytraceMain(acceleration_structure<instancing> as[[buffer(ACC_STRUC
     if (frameParams.frameIndex == 0) {
         newColor = thisColor;
     } else {
-        float4 oldColor = outTex.read(gid.xy);
+        float4 oldColor = inTex.read(gid.xy);
         newColor = (oldColor * raysPerBatch + thisColor) / float(raysPerBatch + 1);
     }
 
