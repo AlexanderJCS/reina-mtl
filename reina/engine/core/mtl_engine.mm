@@ -4,6 +4,7 @@
 #include <iostream>
 #include <chrono>
 
+#include "buffers.hpp"
 #include "model.hpp"
 #include "tri_acc_struct.hpp"
 #include "matmath.hpp"
@@ -27,6 +28,10 @@ void MTLEngine::updateBuffers() {
     frameParams.frameIndex++;
     void* contents = frameParamsBuffer->contents();
     memcpy(contents, &frameParams, sizeof(frameParams));
+    
+    frameParamsBuffer->didModifyRange(
+        NS::Range::Make(0, sizeof(FrameParams))
+    );
 }
 
 void MTLEngine::run() {
@@ -65,10 +70,10 @@ void MTLEngine::createBuffers() {
         .invProj = simd::inverse(proj)
     };
     
-    viewProjBuffer = metalDevice->newBuffer(&viewProjBufferContents, sizeof(viewProjBufferContents), MTL::ResourceStorageModeShared);
+    viewProjBuffer = makePrivateBuffer(metalDevice, metalCommandQueue, &viewProjBufferContents, sizeof(CameraData));
     
     frameParams = FrameParams(0, 64);
-    frameParamsBuffer = metalDevice->newBuffer(&frameParams, sizeof(FrameParams), MTL::ResourceStorageModeShared);
+    frameParamsBuffer = metalDevice->newBuffer(&frameParams, sizeof(FrameParams), MTL::ResourceStorageModeManaged);
 }
 
 void MTLEngine::initWindow() {
