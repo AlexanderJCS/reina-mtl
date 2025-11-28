@@ -109,10 +109,11 @@ void MTLEngine::createAccStructs() {
     simd::float4x4 transform2 = translate(matrix_identity_float4x4, simd::float3{1.5, 0, 0});
     
     scene = std::make_unique<Scene>();
-    std::shared_ptr<Material> material = std::make_shared<Material>(0, simd::float3{0.9f, 0.7f, 0.6f}, 0);
+    std::shared_ptr<Material> material = std::make_shared<Material>(0, simd::float3{0.9f, 0.7f, 0.6f}, simd::float3{0, 0, 0}, 0);
+    std::shared_ptr<Material> emissive = std::make_shared<Material>(0, simd::float3{0.9f, 0.7f, 0.6f}, simd::float3{5, 5, 5}, 0);
     scene->addObject(cornell, material, transform1);
     scene->addObject(cornell, material, transform2);
-    scene->addObject(bunny, material, matrix_identity_float4x4);
+    scene->addObject(bunny, emissive, matrix_identity_float4x4);
     scene->build(metalDevice, metalCommandQueue);
     
     std::vector<MTL::AccelerationStructure*> subStructs;

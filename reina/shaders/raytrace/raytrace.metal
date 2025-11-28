@@ -155,8 +155,9 @@ float3 runRaytrace(ray r, intersector<triangle_data, instancing> i, device const
         return hit.normal;
 #endif
         
-        throughput *= materials[hit.materialIdx].color;
-        incomingLight += float3(0) * throughput;
+        Material mat = materials[hit.materialIdx];
+        throughput *= mat.color;
+        incomingLight += mat.emission * throughput;
         
         r.origin = hit.pos + hit.normal * 0.0001;
         r.direction = bsdfSampleDiffuse(hit.normal, seed);

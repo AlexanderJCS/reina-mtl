@@ -45,6 +45,7 @@ struct VertexData {
 struct Material {
     uint32_t materialID;
     MATH_PREFIX::float3 color;
+    MATH_PREFIX::float3 emission;
     float roughness;
 };
 
