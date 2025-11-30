@@ -35,7 +35,11 @@ void MTLEngine::updateBuffers() {
 }
 
 void MTLEngine::run() {
+    uint32_t samples = 0;
+    
     while (!glfwWindowShouldClose(glfwWindow)) {
+        samples += frameParams.samplesPerBatch;
+        
         @autoreleasepool {
             metalDrawable = (__bridge CA::MetalDrawable*)[metalLayer nextDrawable];
             auto start = std::chrono::steady_clock::now();
@@ -44,7 +48,7 @@ void MTLEngine::run() {
             sendRenderCommand();
             
             std::chrono::duration<double> elapsed = end - start;
-            std::cout << "Time: " << elapsed.count() * 1000 << " ms\n";
+            std::cout << "Samples: " << samples << " Time: " << elapsed.count() * 1000 << " ms\n";
         }
         
         updateBuffers();
@@ -72,7 +76,7 @@ void MTLEngine::createBuffers() {
     
     viewProjBuffer = makePrivateBuffer(metalDevice, metalCommandQueue, &viewProjBufferContents, sizeof(CameraData));
     
-    frameParams = FrameParams(0, 1);
+    frameParams = FrameParams(0, 64);
     frameParamsBuffer = metalDevice->newBuffer(&frameParams, sizeof(FrameParams), MTL::ResourceStorageModeManaged);
 }
 
