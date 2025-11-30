@@ -209,7 +209,7 @@ kernel void raytraceMain(acceleration_structure<instancing> as[[buffer(ACC_STRUC
         newColor = thisColor;
     } else {
         float4 oldColor = inTex.read(gid.xy);
-        newColor = (oldColor * raysPerBatch + thisColor) / float(raysPerBatch + 1);
+        newColor = (oldColor * frameParams.frameIndex + thisColor) / float(frameParams.frameIndex + 1);
     }
 
     outTex.write(newColor, gid.xy);

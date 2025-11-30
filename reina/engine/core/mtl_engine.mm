@@ -72,7 +72,7 @@ void MTLEngine::createBuffers() {
     
     viewProjBuffer = makePrivateBuffer(metalDevice, metalCommandQueue, &viewProjBufferContents, sizeof(CameraData));
     
-    frameParams = FrameParams(0, 64);
+    frameParams = FrameParams(0, 1);
     frameParamsBuffer = metalDevice->newBuffer(&frameParams, sizeof(FrameParams), MTL::ResourceStorageModeManaged);
 }
 
@@ -99,21 +99,20 @@ void MTLEngine::initWindow() {
 
 void MTLEngine::createAccStructs() {
     std::shared_ptr<Model> cornell = std::make_shared<Model>(metalDevice, "assets/cornell_box.obj");
+    std::shared_ptr<Model> cornellLight = std::make_shared<Model>(metalDevice, "assets/cornell_light.obj");
     std::shared_ptr<Model> bunny = std::make_shared<Model>(metalDevice, "assets/bunny.obj");
     childAccStructs = std::vector<std::unique_ptr<TriangleAccelerationStructure>>{};
     
     childAccStructs.push_back(std::make_unique<TriangleAccelerationStructure>(metalDevice, metalCommandQueue, *cornell));
     //    childAccStructs.push_back(std::make_unique<TriangleAccelerationStructure>(metalDevice, metalCommandQueue, *model));
     
-    simd::float4x4 transform1 = translate(matrix_identity_float4x4, simd::float3{-1.5, 0, 0});
-    simd::float4x4 transform2 = translate(matrix_identity_float4x4, simd::float3{1.5, 0, 0});
-    
     scene = std::make_unique<Scene>();
-    std::shared_ptr<Material> material = std::make_shared<Material>(0, simd::float3{0.9f, 0.7f, 0.6f}, simd::float3{0, 0, 0}, 0);
-    std::shared_ptr<Material> emissive = std::make_shared<Material>(0, simd::float3{0.9f, 0.7f, 0.6f}, simd::float3{5, 5, 5}, 0);
-    scene->addObject(cornell, material, transform1);
-    scene->addObject(cornell, material, transform2);
-    scene->addObject(bunny, emissive, matrix_identity_float4x4);
+    std::shared_ptr<Material> red = std::make_shared<Material>(0, simd::float3{0.9f, 0.7f, 0.6f}, simd::float3{0, 0, 0}, 0);
+    std::shared_ptr<Material> white = std::make_shared<Material>(0, simd::float3{0.9f, 0.9f, 0.9f}, 0);
+    std::shared_ptr<Material> emissive = std::make_shared<Material>(0, simd::float3{0.9f, 0.7f, 0.6f}, simd::float3{10, 10, 10}, 0);
+    scene->addObject(cornell, white, matrix_identity_float4x4);
+    scene->addObject(cornellLight, emissive, matrix_identity_float4x4);
+    scene->addObject(bunny, red, matrix_identity_float4x4);
     scene->build(metalDevice, metalCommandQueue);
     
     std::vector<MTL::AccelerationStructure*> subStructs;
