@@ -2,6 +2,8 @@
 #include <Metal/Metal.hpp>
 #include <stb/stb_image.h>
 
+#include <string>
+
 class Texture {
 public:
     Texture(const char* filepath, MTL::Device* metalDevice, MTL::TextureUsage usage);

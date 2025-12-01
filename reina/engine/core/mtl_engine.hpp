@@ -80,4 +80,5 @@ private:
 
     std::unique_ptr<Texture> rtPing;
     std::unique_ptr<Texture> rtPong;
+    std::unique_ptr<Texture> tonemapped;
 };

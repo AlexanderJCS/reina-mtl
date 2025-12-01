@@ -145,6 +145,8 @@ void MTLEngine::createSquare() {
 
     rtPing = std::make_unique<Texture>(metalDevice, drawableWidth, drawableHeight, 4, MTL::PixelFormatRGBA32Float, MTL::TextureUsageShaderRead | MTL::TextureUsageShaderWrite);
     rtPong = std::make_unique<Texture>(metalDevice, drawableWidth, drawableHeight, 4, MTL::PixelFormatRGBA32Float, MTL::TextureUsageShaderRead | MTL::TextureUsageShaderWrite);
+    
+    tonemapped = std::make_unique<Texture>(metalDevice, drawableWidth, drawableHeight, 4, MTL::PixelFormatRGBA8Unorm, MTL::TextureUsageShaderRead | MTL::TextureUsageShaderWrite);
 }
 
 
