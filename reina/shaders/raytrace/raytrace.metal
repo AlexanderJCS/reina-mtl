@@ -86,8 +86,59 @@ float3 randUnitFloat3(thread uint& seed) {
     }
 }
 
-float3 bsdfSampleDiffuse(float3 n, thread uint& seed) {
-    return normalize(float3(n + randUnitFloat3(seed)));
+void buildONB(float3 n, thread float3& T, thread float3& B) {
+    float sign = copysign(1.0f, n.z);
+    float a = -1.0f / (sign + n.z);
+    float b = n.x * n.y * a;
+    T = float3(1.0f + sign * n.x * n.x * a, sign * b, -sign * n.x);
+    B = float3(b, sign + n.y * n.y * a, -n.y);
+    
+    T = normalize(T);
+    B = normalize(B);
+}
+
+float2 concentricSampleDisk(float u1, float u2) {
+    // map to [-1,1]^2
+    float sx = 2.0f * u1 - 1.0f;
+    float sy = 2.0f * u2 - 1.0f;
+
+    // handle degeneracy at the origin
+    if (sx == 0.0f && sy == 0.0f) {
+        return float2(0.0f, 0.0f);
+    }
+
+    float r, theta;
+    if (abs(sx) > abs(sy)) {
+        r = sx;
+        theta = (M_PI_F / 4.0f) * (sy / sx);
+    } else {
+        r = sy;
+        theta = (M_PI_F / 2.0f) - (M_PI_F / 4.0f) * (sx / sy);
+    }
+
+    return float2(r * cos(theta), r * sin(theta));
+}
+
+// RNG: uses your rand(thread uint& seed) existing function
+inline float3 sampleCosineHemisphere(float3 N, thread uint& seed) {
+    // generate two uniforms
+    float u1 = rand(seed);
+    float u2 = rand(seed);
+
+    // sample concentric disk
+    float2 d = concentricSampleDisk(u1, u2);
+    float x = d.x;
+    float y = d.y;
+    float z = sqrt(max(0.0f, 1.0f - x*x - y*y)); // hemisphere z
+
+    // local-space direction (z = up)
+    float3 localDir = float3(x, y, z); // already normalized approximately
+
+    // build ONB and transform to world
+    float3 T, B;
+    buildONB(N, T, B);
+    float3 worldDir = localDir.x * T + localDir.y * B + localDir.z * N;
+    return normalize(worldDir); // unit length
 }
 
 ray getStartingRay(
@@ -143,7 +194,7 @@ float3 runRaytrace(ray r, intersector<triangle_data, instancing> i, device const
     float3 throughput = float3(1);
     float3 incomingLight = float3(0);
     
-    for (int tracedSegments = 0; tracedSegments < 16; tracedSegments++) {
+    for (int tracedSegments = 0; tracedSegments < 10; tracedSegments++) {
         HitInfo hit = intersectScene(r, i, as, vertices, indices, materials, instanceData);
         
         if (!hit.hit) {
@@ -160,7 +211,7 @@ float3 runRaytrace(ray r, intersector<triangle_data, instancing> i, device const
         incomingLight += mat.emission * throughput;
         
         r.origin = hit.pos + hit.normal * 0.0001;
-        r.direction = bsdfSampleDiffuse(hit.normal, seed);
+        r.direction = sampleCosineHemisphere(hit.normal, seed);
     }
     
     return incomingLight;
