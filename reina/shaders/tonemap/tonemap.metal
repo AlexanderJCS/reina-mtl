@@ -3,27 +3,6 @@ using namespace metal;
 
 #include "../../polyglot/shared.hpp"
 
-struct VertexOut {
-    // The [[position]] attribute of this member indicates that this value
-    // is the clip space position of the vertex when this structure is
-    // returned from the vertex function.
-    float4 position [[position]];
-
-    // Since this member does not have a special attribute, the rasterizer
-    // interpolates its value with the values of the other triangle vertices
-    // and then passes the interpolated value to the fragment shader for each
-    // fragment in the triangle.
-    float2 textureCoordinate;
-};
-
-vertex VertexOut vertexShader(uint vertexID [[vertex_id]],
-             constant VertexData* vertexData) {
-    VertexOut out;
-    out.position = vertexData[vertexID].position;
-    out.textureCoordinate = vertexData[vertexID].textureCoordinate;
-    return out;
-}
-
 // AGX functions courtesy of: https://iolite-engine.com/blog_posts/minimal_agx_implementation
 #define AGX_LOOK 0
 
@@ -114,6 +93,10 @@ float3 linearToSRGB(float3 c) {
         1.055 * pow(c, 1.0 / 2.4) - 0.055,
         c > 0.0031308
     );
+}
+
+float3 reinhard(float3 in) {
+    return in / (1 + in);
 }
 
 kernel void tonemapMain(texture2d<float, access::read> inTex [[texture(0)]],

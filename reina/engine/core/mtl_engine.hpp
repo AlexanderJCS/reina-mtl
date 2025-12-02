@@ -37,9 +37,11 @@ public:
     void createDefaultLibrary();
     void createCommandQueue();
     void createRenderPipeline();
-    void createComputePipeline();
+    void createAllComputePSOs();
     void updateBuffers();
-
+    void tonemap();
+    MTL::ComputePipelineState* createComputePSO(NS::String* kernelName);
+    
     void runRaytrace();
     void encodeRenderCommand(MTL::RenderCommandEncoder* renderEncoder);
     void sendRenderCommand();
@@ -68,7 +70,8 @@ private:
     std::unique_ptr<Scene> scene;
 
     MTL::Buffer* viewProjBuffer;
-    MTL::ComputePipelineState* computePSO;
+    MTL::ComputePipelineState* raytracePSO;
+    MTL::ComputePipelineState* tonemapPSO;
     MTL::Library* metalDefaultLibrary;
     MTL::CommandQueue* metalCommandQueue;
     MTL::CommandBuffer* metalCommandBuffer;

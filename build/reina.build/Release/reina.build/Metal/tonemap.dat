@@ -1,0 +1,4 @@
+dependencies: \
+  /Users/alexcastronovo/Xcode\ Projects/reina/reina/shaders/tonemap/tonemap.metal \
+  /private/var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.2.54.0.iivqBy/Metal.xctoolchain/usr/metal/32023/lib/clang/32023.830/include/metal/module.modulemap \
+  /Users/alexcastronovo/Xcode\ Projects/reina/reina/shaders/tonemap/../../polyglot/shared.hpp

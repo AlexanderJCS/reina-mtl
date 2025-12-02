@@ -17,7 +17,7 @@ void MTLEngine::init() {
     
     createSquare();
     createDefaultLibrary();
-    createComputePipeline();
+    createAllComputePSOs();
     createCommandQueue();
     createRenderPipeline();
     createAccStructs();
@@ -45,6 +45,7 @@ void MTLEngine::run() {
             auto start = std::chrono::steady_clock::now();
             runRaytrace();
             auto end = std::chrono::steady_clock::now();
+            tonemap();
             sendRenderCommand();
             
             std::chrono::duration<double> elapsed = end - start;
@@ -162,13 +163,32 @@ void MTLEngine::createCommandQueue() {
     metalCommandQueue = metalDevice->newCommandQueue();
 }
 
-void MTLEngine::createComputePipeline() {
-    MTL::Function* computeShader = metalDefaultLibrary->newFunction(NS::String::string("raytraceMain", NS::ASCIIStringEncoding));
+void MTLEngine::createAllComputePSOs()
+{
+    NS::String* raytraceMainName =
+        NS::String::alloc()->init("raytraceMain", NS::UTF8StringEncoding);
+
+    NS::String* tonemapMainName =
+        NS::String::alloc()->init("tonemapMain", NS::UTF8StringEncoding);
+
+    raytracePSO = createComputePSO(raytraceMainName);
+    tonemapPSO  = createComputePSO(tonemapMainName);
+
+    raytraceMainName->release();
+    tonemapMainName->release();
+}
+
+MTL::ComputePipelineState* MTLEngine::createComputePSO(NS::String* kernelName) {
+    MTL::Function* computeShader = metalDefaultLibrary->newFunction(kernelName);
     NS::Error* error = nullptr;
-    computePSO = metalDevice->newComputePipelineState(computeShader, &error);
+    MTL::ComputePipelineState* pso = metalDevice->newComputePipelineState(computeShader, &error);
     if (error) {
         printf("Compute pipeline creation error: %s\n", error->localizedDescription()->utf8String());
     }
+    
+    computeShader->release();
+    
+    return pso;
 }
 
 void MTLEngine::createRenderPipeline() {
@@ -199,7 +219,7 @@ void MTLEngine::runRaytrace() {
         encoder->useResource(accStruct.getAccelerationStructure(), MTL::ResourceUsageRead);
     }
 
-    encoder->setComputePipelineState(computePSO);
+    encoder->setComputePipelineState(raytracePSO);
     encoder->setTexture(rtPing->texture, INPUT_TEXTURE_IDX);
     encoder->setTexture(rtPong->texture, OUTPUT_TEXTURE_IDX);
     encoder->setAccelerationStructure(scene->getInstanceAccStruct().getAccelerationStructure(), ACC_STRUCT_BUFFER_IDX);
@@ -219,6 +239,23 @@ void MTLEngine::runRaytrace() {
     commandBuffer->waitUntilCompleted();
     
     std::swap(rtPing, rtPong);
+}
+
+void MTLEngine::tonemap() {
+    MTL::CommandBuffer* commandBuffer = metalCommandQueue->commandBuffer();
+    MTL::ComputeCommandEncoder* encoder = commandBuffer->computeCommandEncoder();
+    
+    encoder->setComputePipelineState(tonemapPSO);
+    encoder->setTexture(rtPong->texture, 0);
+    encoder->setTexture(tonemapped->texture, 1);
+    
+    MTL::Size gridSize = MTL::Size(tonemapped->width, tonemapped->height, 1);
+    MTL::Size threadgroupSize = MTL::Size(8, 8, 1);
+    encoder->dispatchThreads(gridSize, threadgroupSize);
+    
+    encoder->endEncoding();
+    commandBuffer->commit();
+    commandBuffer->waitUntilCompleted();
 }
 
 void MTLEngine::sendRenderCommand() {
@@ -248,6 +285,7 @@ void MTLEngine::encodeRenderCommand(MTL::RenderCommandEncoder* renderCommandEnco
     MTL::PrimitiveType typeTriangle = MTL::PrimitiveTypeTriangle;
     NS::UInteger vertexStart = 0;
     NS::UInteger vertexCount = 6;
-    renderCommandEncoder->setFragmentTexture(rtPing->texture, 0);
+    renderCommandEncoder->setFragmentTexture(tonemapped->texture, 0);
     renderCommandEncoder->drawPrimitives(typeTriangle, vertexStart, vertexCount);
 }
+
