@@ -59,11 +59,11 @@ void MTLEngine::run() {
 
 void MTLEngine::cleanup() {
     glfwTerminate();
-    metalDevice->release();
+    device->release();
 }
 
 void MTLEngine::initDevice() {
-    metalDevice = MTL::CreateSystemDefaultDevice();
+    device = NS::TransferPtr(MTL::CreateSystemDefaultDevice());
 }
 
 void MTLEngine::createBuffers() {
@@ -75,10 +75,10 @@ void MTLEngine::createBuffers() {
         .invProj = simd::inverse(proj)
     };
     
-    viewProjBuffer = makePrivateBuffer(metalDevice, metalCommandQueue, &viewProjBufferContents, sizeof(CameraData));
+    viewProjBuffer = NS::TransferPtr(makePrivateBuffer(device.get(), cmdQueue.get(), &viewProjBufferContents, sizeof(CameraData)));
     
     frameParams = FrameParams(0, 64);
-    frameParamsBuffer = metalDevice->newBuffer(&frameParams, sizeof(FrameParams), MTL::ResourceStorageModeManaged);
+    frameParamsBuffer = NS::TransferPtr(device->newBuffer(&frameParams, sizeof(FrameParams), MTL::ResourceStorageModeManaged));
 }
 
 void MTLEngine::initWindow() {
@@ -94,7 +94,7 @@ void MTLEngine::initWindow() {
     
     metalWindow = glfwGetCocoaWindow(glfwWindow);
     metalLayer = [CAMetalLayer layer];
-    metalLayer.device = (__bridge id<MTLDevice>)metalDevice;
+    metalLayer.device = (__bridge id<MTLDevice>)device.get();
     metalLayer.pixelFormat = MTLPixelFormatBGRA8Unorm;
     metalLayer.drawableSize = CGSizeMake(drawableWidth, drawableHeight);
     metalLayer.displaySyncEnabled = NO;
@@ -103,13 +103,12 @@ void MTLEngine::initWindow() {
 }
 
 void MTLEngine::createAccStructs() {
-    std::shared_ptr<Model> cornell = std::make_shared<Model>(metalDevice, "assets/cornell_box.obj");
-    std::shared_ptr<Model> cornellLight = std::make_shared<Model>(metalDevice, "assets/cornell_light.obj");
-    std::shared_ptr<Model> bunny = std::make_shared<Model>(metalDevice, "assets/bunny.obj");
+    std::shared_ptr<Model> cornell = std::make_shared<Model>(device.get(), "assets/cornell_box.obj");
+    std::shared_ptr<Model> cornellLight = std::make_shared<Model>(device.get(), "assets/cornell_light.obj");
+    std::shared_ptr<Model> bunny = std::make_shared<Model>(device.get(), "assets/bunny.obj");
     childAccStructs = std::vector<std::unique_ptr<TriangleAccelerationStructure>>{};
     
-    childAccStructs.push_back(std::make_unique<TriangleAccelerationStructure>(metalDevice, metalCommandQueue, *cornell));
-    //    childAccStructs.push_back(std::make_unique<TriangleAccelerationStructure>(metalDevice, metalCommandQueue, *model));
+    childAccStructs.push_back(std::make_unique<TriangleAccelerationStructure>(device.get(), cmdQueue.get(), *cornell));
     
     scene = std::make_unique<Scene>();
     std::shared_ptr<Material> red = std::make_shared<Material>(0, simd::float3{0.9f, 0.7f, 0.6f}, simd::float3{0, 0, 0}, 0);
@@ -118,7 +117,7 @@ void MTLEngine::createAccStructs() {
     scene->addObject(cornell, white, matrix_identity_float4x4);
     scene->addObject(cornellLight, emissive, matrix_identity_float4x4);
     scene->addObject(bunny, red, matrix_identity_float4x4);
-    scene->build(metalDevice, metalCommandQueue);
+    scene->build(device.get(), cmdQueue.get());
     
     std::vector<MTL::AccelerationStructure*> subStructs;
     for (const std::unique_ptr<TriangleAccelerationStructure>& accStruct : childAccStructs) {
@@ -129,7 +128,7 @@ void MTLEngine::createAccStructs() {
         matrix_identity_float4x4
     };
     
-    instanceAccStruct = std::make_unique<InstanceAccelerationStructure>(metalDevice, metalCommandQueue, subStructs, transforms);
+    instanceAccStruct = std::make_unique<InstanceAccelerationStructure>(device.get(), cmdQueue.get(), subStructs, transforms);
 }
 
 void MTLEngine::createSquare() {
@@ -142,25 +141,25 @@ void MTLEngine::createSquare() {
         {{ 1.0f, -1.0f,  1.0f, 1.0f}, {1.0f, 0.0f}}
     };
 
-    squareVertexBuffer = metalDevice->newBuffer(&squareVertices, sizeof(squareVertices), MTL::ResourceStorageModeShared);
+    squareVertexBuffer = NS::TransferPtr(device->newBuffer(&squareVertices, sizeof(squareVertices), MTL::ResourceStorageModeShared));
 
-    rtPing = std::make_unique<Texture>(metalDevice, drawableWidth, drawableHeight, 4, MTL::PixelFormatRGBA32Float, MTL::TextureUsageShaderRead | MTL::TextureUsageShaderWrite);
-    rtPong = std::make_unique<Texture>(metalDevice, drawableWidth, drawableHeight, 4, MTL::PixelFormatRGBA32Float, MTL::TextureUsageShaderRead | MTL::TextureUsageShaderWrite);
+    rtPing = std::make_unique<Texture>(device.get(), drawableWidth, drawableHeight, 4, MTL::PixelFormatRGBA32Float, MTL::TextureUsageShaderRead | MTL::TextureUsageShaderWrite);
+    rtPong = std::make_unique<Texture>(device.get(), drawableWidth, drawableHeight, 4, MTL::PixelFormatRGBA32Float, MTL::TextureUsageShaderRead | MTL::TextureUsageShaderWrite);
     
-    tonemapped = std::make_unique<Texture>(metalDevice, drawableWidth, drawableHeight, 4, MTL::PixelFormatRGBA8Unorm, MTL::TextureUsageShaderRead | MTL::TextureUsageShaderWrite);
+    tonemapped = std::make_unique<Texture>(device.get(), drawableWidth, drawableHeight, 4, MTL::PixelFormatRGBA8Unorm, MTL::TextureUsageShaderRead | MTL::TextureUsageShaderWrite);
 }
 
 
 void MTLEngine::createDefaultLibrary() {
-    metalDefaultLibrary = metalDevice->newDefaultLibrary();
-    if(!metalDefaultLibrary){
+    defaultLib = NS::TransferPtr(device->newDefaultLibrary());
+    if(!defaultLib){
         std::cerr << "Failed to load default library.";
         std::exit(-1);
     }
 }
 
 void MTLEngine::createCommandQueue() {
-    metalCommandQueue = metalDevice->newCommandQueue();
+    cmdQueue = NS::TransferPtr(device->newCommandQueue());
 }
 
 void MTLEngine::createAllComputePSOs()
@@ -171,17 +170,17 @@ void MTLEngine::createAllComputePSOs()
     NS::String* tonemapMainName =
         NS::String::alloc()->init("tonemapMain", NS::UTF8StringEncoding);
 
-    raytracePSO = createComputePSO(raytraceMainName);
-    tonemapPSO  = createComputePSO(tonemapMainName);
+    raytracePSO = NS::TransferPtr(createComputePSO(raytraceMainName));
+    tonemapPSO  = NS::TransferPtr(createComputePSO(tonemapMainName));
 
     raytraceMainName->release();
     tonemapMainName->release();
 }
 
 MTL::ComputePipelineState* MTLEngine::createComputePSO(NS::String* kernelName) {
-    MTL::Function* computeShader = metalDefaultLibrary->newFunction(kernelName);
+    MTL::Function* computeShader = defaultLib->newFunction(kernelName);
     NS::Error* error = nullptr;
-    MTL::ComputePipelineState* pso = metalDevice->newComputePipelineState(computeShader, &error);
+    MTL::ComputePipelineState* pso = device->newComputePipelineState(computeShader, &error);
     if (error) {
         printf("Compute pipeline creation error: %s\n", error->localizedDescription()->utf8String());
     }
@@ -192,9 +191,9 @@ MTL::ComputePipelineState* MTLEngine::createComputePSO(NS::String* kernelName) {
 }
 
 void MTLEngine::createRenderPipeline() {
-    MTL::Function* vertexShader = metalDefaultLibrary->newFunction(NS::String::string("vertexShader", NS::ASCIIStringEncoding));
+    MTL::Function* vertexShader = defaultLib->newFunction(NS::String::string("vertexShader", NS::ASCIIStringEncoding));
     assert(vertexShader);
-    MTL::Function* fragmentShader = metalDefaultLibrary->newFunction(NS::String::string("fragmentShader", NS::ASCIIStringEncoding));
+    MTL::Function* fragmentShader = defaultLib->newFunction(NS::String::string("fragmentShader", NS::ASCIIStringEncoding));
     assert(fragmentShader);
 
     MTL::RenderPipelineDescriptor* renderPipelineDescriptor = MTL::RenderPipelineDescriptor::alloc()->init();
@@ -206,27 +205,27 @@ void MTLEngine::createRenderPipeline() {
     renderPipelineDescriptor->colorAttachments()->object(0)->setPixelFormat(pixelFormat);
 
     NS::Error* error;
-    metalRenderPSO = metalDevice->newRenderPipelineState(renderPipelineDescriptor, &error);
+    metalRenderPSO = NS::TransferPtr(device->newRenderPipelineState(renderPipelineDescriptor, &error));
 
     renderPipelineDescriptor->release();
 }
 
 void MTLEngine::runRaytrace() {
-    MTL::CommandBuffer* commandBuffer = metalCommandQueue->commandBuffer();
+    MTL::CommandBuffer* commandBuffer = cmdQueue->commandBuffer();
     MTL::ComputeCommandEncoder* encoder = commandBuffer->computeCommandEncoder();
     
     for (const auto& accStruct : scene->getChildAccStructs()) {
         encoder->useResource(accStruct.getAccelerationStructure(), MTL::ResourceUsageRead);
     }
 
-    encoder->setComputePipelineState(raytracePSO);
+    encoder->setComputePipelineState(raytracePSO.get());
     encoder->setTexture(rtPing->texture, INPUT_TEXTURE_IDX);
     encoder->setTexture(rtPong->texture, OUTPUT_TEXTURE_IDX);
     encoder->setAccelerationStructure(scene->getInstanceAccStruct().getAccelerationStructure(), ACC_STRUCT_BUFFER_IDX);
-    encoder->setBuffer(viewProjBuffer, 0, CAMERA_BUFFER_IDX);
+    encoder->setBuffer(viewProjBuffer.get(), 0, CAMERA_BUFFER_IDX);
     encoder->setBuffer(scene->getVertexBuffer(), 0, VERTICES_BUFFER_IDX);
     encoder->setBuffer(scene->getIndexBuffer(), 0, INDICES_BUFFER_IDX);
-    encoder->setBuffer(frameParamsBuffer, 0, FRAME_PARAMS_BUFFER_IDX);
+    encoder->setBuffer(frameParamsBuffer.get(), 0, FRAME_PARAMS_BUFFER_IDX);
     encoder->setBuffer(scene->getInstanceDataBuffer(), 0, INSTANCE_DATA_BUFFER_IDX);
     encoder->setBuffer(scene->getMaterialBuffer(), 0, MATERIAL_BUFFER_IDX);
     
@@ -242,10 +241,10 @@ void MTLEngine::runRaytrace() {
 }
 
 void MTLEngine::tonemap() {
-    MTL::CommandBuffer* commandBuffer = metalCommandQueue->commandBuffer();
+    MTL::CommandBuffer* commandBuffer = cmdQueue->commandBuffer();
     MTL::ComputeCommandEncoder* encoder = commandBuffer->computeCommandEncoder();
     
-    encoder->setComputePipelineState(tonemapPSO);
+    encoder->setComputePipelineState(tonemapPSO.get());
     encoder->setTexture(rtPong->texture, 0);
     encoder->setTexture(tonemapped->texture, 1);
     
@@ -259,29 +258,28 @@ void MTLEngine::tonemap() {
 }
 
 void MTLEngine::sendRenderCommand() {
-    metalCommandBuffer = metalCommandQueue->commandBuffer();
+    MTL::CommandBuffer* cmdBuffer = cmdQueue->commandBuffer();
 
     MTL::RenderPassDescriptor* renderPassDescriptor = MTL::RenderPassDescriptor::alloc()->init();
     MTL::RenderPassColorAttachmentDescriptor* cd = renderPassDescriptor->colorAttachments()->object(0);
     cd->setTexture(metalDrawable->texture());
     cd->setLoadAction(MTL::LoadActionClear);
-    cd->setClearColor(MTL::ClearColor(41.0f/255.0f, 42.0f/255.0f, 48.0f/255.0f, 1.0));
     cd->setStoreAction(MTL::StoreActionStore);
 
-    MTL::RenderCommandEncoder* renderCommandEncoder = metalCommandBuffer->renderCommandEncoder(renderPassDescriptor);
+    MTL::RenderCommandEncoder* renderCommandEncoder = cmdBuffer->renderCommandEncoder(renderPassDescriptor);
     encodeRenderCommand(renderCommandEncoder);
     renderCommandEncoder->endEncoding();
 
-    metalCommandBuffer->presentDrawable(metalDrawable);
-    metalCommandBuffer->commit();
-    metalCommandBuffer->waitUntilCompleted();
+    cmdBuffer->presentDrawable(metalDrawable);
+    cmdBuffer->commit();
+    cmdBuffer->waitUntilCompleted();
 
     renderPassDescriptor->release();
 }
 
 void MTLEngine::encodeRenderCommand(MTL::RenderCommandEncoder* renderCommandEncoder) {
-    renderCommandEncoder->setRenderPipelineState(metalRenderPSO);
-    renderCommandEncoder->setVertexBuffer(squareVertexBuffer, 0, 0);
+    renderCommandEncoder->setRenderPipelineState(metalRenderPSO.get());
+    renderCommandEncoder->setVertexBuffer(squareVertexBuffer.get(), 0, 0);
     MTL::PrimitiveType typeTriangle = MTL::PrimitiveTypeTriangle;
     NS::UInteger vertexStart = 0;
     NS::UInteger vertexCount = 6;

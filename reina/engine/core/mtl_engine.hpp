@@ -62,23 +62,21 @@ private:
     std::vector<std::unique_ptr<TriangleAccelerationStructure>> childAccStructs;
     std::unique_ptr<InstanceAccelerationStructure> instanceAccStruct;
     
-    MTL::Device* metalDevice;
+    NS::SharedPtr<MTL::Device> device;
     GLFWwindow* glfwWindow;
     NSWindow* metalWindow;
     CAMetalLayer* metalLayer;
     CA::MetalDrawable* metalDrawable;
     std::unique_ptr<Scene> scene;
 
-    MTL::Buffer* viewProjBuffer;
-    MTL::ComputePipelineState* raytracePSO;
-    MTL::ComputePipelineState* tonemapPSO;
-    MTL::Library* metalDefaultLibrary;
-    MTL::CommandQueue* metalCommandQueue;
-    MTL::CommandBuffer* metalCommandBuffer;
-    MTL::RenderPipelineState* metalRenderPSO;
-    MTL::Buffer* triangleVertexBuffer;
-    MTL::Buffer* squareVertexBuffer;
-    MTL::Buffer* frameParamsBuffer;
+    NS::SharedPtr<MTL::Buffer> viewProjBuffer;
+    NS::SharedPtr<MTL::ComputePipelineState> raytracePSO;
+    NS::SharedPtr<MTL::ComputePipelineState> tonemapPSO;
+    NS::SharedPtr<MTL::Library> defaultLib;
+    NS::SharedPtr<MTL::CommandQueue> cmdQueue;
+    NS::SharedPtr<MTL::RenderPipelineState> metalRenderPSO;
+    NS::SharedPtr<MTL::Buffer> squareVertexBuffer;
+    NS::SharedPtr<MTL::Buffer> frameParamsBuffer;
     FrameParams frameParams;
 
     std::unique_ptr<Texture> rtPing;
