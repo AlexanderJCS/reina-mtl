@@ -8,6 +8,8 @@ TriangleAccelerationStructure::TriangleAccelerationStructure(MTL::Device* device
         MTL::AccelerationStructureTriangleGeometryDescriptor::alloc()->init();
     
     geomDescriptor->setVertexBuffer(model.getVertexBuffer());
+    geomDescriptor->setVertexStride(sizeof(ModelVertexData));
+    geomDescriptor->setVertexBufferOffset(offsetof(ModelVertexData, pos));
     geomDescriptor->setIndexBuffer(model.getIndexBuffer());
     geomDescriptor->setTriangleCount(model.getTriangleCount());
     

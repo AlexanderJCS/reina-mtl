@@ -88,7 +88,7 @@ void Scene::buildModelDataBuffers(MTL::Device* device, MTL::CommandQueue* cmdQue
     }
     
     // Second pass to build buffers and move data in
-    vertexBuffer = device->newBuffer(totalVertices * 3 * sizeof(float), MTL::ResourceStorageModePrivate);
+    vertexBuffer = device->newBuffer(totalVertices * sizeof(ModelVertexData), MTL::ResourceStorageModePrivate);
     vertexBuffer->setLabel(NS::String::string("Scene vertex bufer", NS::UTF8StringEncoding));
  
     MTL::CommandBuffer* cmdBuffer = cmdQueue->commandBuffer();
@@ -103,8 +103,8 @@ void Scene::buildModelDataBuffers(MTL::Device* device, MTL::CommandQueue* cmdQue
         encoder->copyFromBuffer(model->getVertexBuffer(),
                                 0,
                                 vertexBuffer,
-                                currentVertex * 3 * sizeof(float),
-                                model->getVertexCount() * 3 * sizeof(float));
+                                currentVertex * sizeof(ModelVertexData),
+                                model->getVertexCount() * sizeof(ModelVertexData));
         
         const std::vector<uint32_t> modelIndices = model->getIndices();
         for (int j = 0; j < modelIndices.size(); j++) {

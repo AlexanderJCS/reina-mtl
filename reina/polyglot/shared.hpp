@@ -37,7 +37,7 @@ struct FrameParams {
     uint samplesPerBatch;
 };
 
-struct VertexData {
+struct FullscreenQuadVertexData {
     MATH_PREFIX::float4 position;
     MATH_PREFIX::float2 textureCoordinate;
 };
@@ -47,6 +47,23 @@ struct Material {
     MATH_PREFIX::float3 color;
     MATH_PREFIX::float3 emission;
     float roughness;
+};
+
+struct ModelVertexData {
+    MATH_PREFIX::float3 pos, normal, tangent;
+    MATH_PREFIX::float2 uv;
+    float sign;
+    
+#ifndef __METAL_VERSION__
+    bool operator==(const ModelVertexData& rhs) const {
+        /// WARNING: tangents and signs are not included in this comparison because this is for unordered_map before MikkTSpace calculations
+        
+        return pos.x == rhs.pos.x && pos.y == rhs.pos.y && pos.z == rhs.pos.z &&
+            normal.x == rhs.normal.x && normal.y == rhs.normal.y && normal.z == rhs.normal.z &&
+            uv.x == rhs.uv.x && uv.y == rhs.uv.y &&
+            sign == rhs.sign;
+    }
+#endif // !__METAL_VERSION__
 };
 
 struct InstanceData {

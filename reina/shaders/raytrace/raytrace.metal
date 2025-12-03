@@ -13,7 +13,7 @@ struct HitInfo {
     uint32_t materialIdx;
 };
 
-HitInfo intersectScene(ray r, intersector<triangle_data, instancing> i, acceleration_structure<instancing> as, device const packed_float3* vertices, device const uint* indices, device const Material* materials, device const InstanceData* instanceData) {
+HitInfo intersectScene(ray r, intersector<triangle_data, instancing> i, acceleration_structure<instancing> as, device const ModelVertexData* vertices, device const uint* indices, device const Material* materials, device const InstanceData* instanceData) {
     intersection_result<triangle_data, instancing> result = i.intersect(r, as);
     
     if (result.type != intersection_type::triangle) {
@@ -28,9 +28,10 @@ HitInfo intersectScene(ray r, intersector<triangle_data, instancing> i, accelera
     int i1 = indices[idxOffset + result.primitive_id * 3 + 1];
     int i2 = indices[idxOffset + result.primitive_id * 3 + 2];
     
-    float3 v0 = vertices[i0];
-    float3 v1 = vertices[i1];
-    float3 v2 = vertices[i2];
+    // TODO: transform these vertices into world space
+    float3 v0 = vertices[i0].pos;
+    float3 v1 = vertices[i1].pos;
+    float3 v2 = vertices[i2].pos;
     
     float3 pos = r.origin + r.direction * result.distance;
     
@@ -190,7 +191,7 @@ float3 skyColor(float3 dir) {
     return mix(float3(1, 1, 1), float3(0.3, 0.5, 1.0), saturate(dir.y * 0.5 + 0.5));
 }
 
-float3 runRaytrace(ray r, intersector<triangle_data, instancing> i, device const packed_float3* vertices, device const InstanceData* instanceData, device const uint* indices, device const Material* materials, acceleration_structure<instancing> as, thread uint& seed) {
+float3 runRaytrace(ray r, intersector<triangle_data, instancing> i, device const ModelVertexData* vertices, device const InstanceData* instanceData, device const uint* indices, device const Material* materials, acceleration_structure<instancing> as, thread uint& seed) {
     float3 throughput = float3(1);
     float3 incomingLight = float3(0);
     
@@ -219,7 +220,7 @@ float3 runRaytrace(ray r, intersector<triangle_data, instancing> i, device const
 
 kernel void raytraceMain(acceleration_structure<instancing> as[[buffer(ACC_STRUCT_BUFFER_IDX)]],
                          constant CameraData& matrices [[buffer(CAMERA_BUFFER_IDX)]],
-                         device const packed_float3* vertices [[buffer(VERTICES_BUFFER_IDX)]],
+                         device const ModelVertexData* vertices [[buffer(VERTICES_BUFFER_IDX)]],
                          device const uint* indices [[buffer(INDICES_BUFFER_IDX)]],
                          device const InstanceData* instanceData [[buffer(INSTANCE_DATA_BUFFER_IDX)]],
                          device const Material* materials [[buffer(MATERIAL_BUFFER_IDX)]],

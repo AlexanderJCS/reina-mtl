@@ -9,7 +9,7 @@ struct VertexOut {
 };
 
 vertex VertexOut vertexShader(uint vertexID [[vertex_id]],
-                              constant VertexData* vertexData) {
+                              constant FullscreenQuadVertexData* vertexData) {
     VertexOut out;
     out.position = vertexData[vertexID].position;
     out.textureCoordinate = vertexData[vertexID].textureCoordinate;

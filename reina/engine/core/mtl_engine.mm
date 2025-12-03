@@ -103,9 +103,9 @@ void MTLEngine::initWindow() {
 }
 
 void MTLEngine::createAccStructs() {
-    std::shared_ptr<Model> cornell = std::make_shared<Model>(device.get(), "assets/cornell_box.obj");
-    std::shared_ptr<Model> cornellLight = std::make_shared<Model>(device.get(), "assets/cornell_light.obj");
-    std::shared_ptr<Model> bunny = std::make_shared<Model>(device.get(), "assets/bunny.obj");
+    std::shared_ptr<Model> cornell = std::make_shared<Model>(device.get(), cmdQueue.get(), "assets/cornell_box.obj");
+    std::shared_ptr<Model> cornellLight = std::make_shared<Model>(device.get(), cmdQueue.get(), "assets/cornell_light.obj");
+//    std::shared_ptr<Model> bunny = std::make_shared<Model>(device.get(), cmdQueue.get(), "assets/bunny.obj");
     childAccStructs = std::vector<std::unique_ptr<TriangleAccelerationStructure>>{};
     
     childAccStructs.push_back(std::make_unique<TriangleAccelerationStructure>(device.get(), cmdQueue.get(), *cornell));
@@ -116,7 +116,7 @@ void MTLEngine::createAccStructs() {
     std::shared_ptr<Material> emissive = std::make_shared<Material>(0, simd::float3{0.9f, 0.7f, 0.6f}, simd::float3{10, 10, 10}, 0);
     scene->addObject(cornell, white, matrix_identity_float4x4);
     scene->addObject(cornellLight, emissive, matrix_identity_float4x4);
-    scene->addObject(bunny, red, matrix_identity_float4x4);
+//    scene->addObject(bunny, red, matrix_identity_float4x4);
     scene->build(device.get(), cmdQueue.get());
     
     std::vector<MTL::AccelerationStructure*> subStructs;
@@ -132,7 +132,7 @@ void MTLEngine::createAccStructs() {
 }
 
 void MTLEngine::createSquare() {
-    VertexData squareVertices[] {
+    FullscreenQuadVertexData squareVertices[] {
         {{-1.0f, -1.0f,  1.0f, 1.0f}, {0.0f, 0.0f}},
         {{-1.0f,  1.0f,  1.0f, 1.0f}, {0.0f, 1.0f}},
         {{ 1.0f,  1.0f,  1.0f, 1.0f}, {1.0f, 1.0f}},
