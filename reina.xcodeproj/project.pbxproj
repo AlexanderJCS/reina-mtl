@@ -189,6 +189,13 @@
 				tinyobjloader/tinyobjloader.h,
 			);
 		};
+		68B74A6B2EE129CF009A7841 /* Exceptions for "assets" folder in "Compile Sources" phase from "reina" target */ = {
+			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
+			buildPhase = 6847C7CE2EB8291C007CF281 /* Sources */;
+			membershipExceptions = (
+				triangle.obj,
+			);
+		};
 /* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -207,6 +214,9 @@
 		};
 		6847C9342EB995B1007CF281 /* assets */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				68B74A6B2EE129CF009A7841 /* Exceptions for "assets" folder in "Compile Sources" phase from "reina" target */,
+			);
 			path = assets;
 			sourceTree = "<group>";
 		};

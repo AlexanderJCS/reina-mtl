@@ -204,7 +204,7 @@ float3 runRaytrace(ray r, intersector<triangle_data, instancing> i, device const
         }
         
 #ifdef DEBUG_SHOW_NORMALS
-        return hit.normal;
+        return hit.normal * 0.5 + 0.5;
 #endif
         
         Material mat = materials[hit.materialIdx];

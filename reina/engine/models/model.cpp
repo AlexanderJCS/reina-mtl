@@ -52,7 +52,7 @@ Model::Model(MTL::Device* device, MTL::CommandQueue* cmdQueue, const std::string
     indexBuffer->setLabel(NS::String::string("Index Buffer", NS::UTF8StringEncoding));
     
     triangleCount = finalIndices.size() / 3;
-    vertexCount = finalVertices.size() / 3;
+    vertexCount = finalVertices.size();
 }
 
 void Model::buildVertexData(const std::vector<simd::float3>& vertices, const std::vector<simd::float3>& normals, const std::vector<simd::float2>& texcoords, const std::vector<tinyobj::index_t>& indices) {
