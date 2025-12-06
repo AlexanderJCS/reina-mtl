@@ -194,6 +194,7 @@
 			buildPhase = 6847C7CE2EB8291C007CF281 /* Sources */;
 			membershipExceptions = (
 				triangle.obj,
+				uv_sphere_highres.obj,
 			);
 		};
 /* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */

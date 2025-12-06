@@ -44,15 +44,13 @@ Model::Model(MTL::Device* device, MTL::CommandQueue* cmdQueue, const std::string
     }
     
     buildVertexData(vertices, normals, texcoords, shape.mesh.indices);
+    computeTBNs();
     
     vertexBuffer = makePrivateBuffer(device, cmdQueue, finalVertices.data(), static_cast<uint32_t>(finalVertices.size() * sizeof(ModelVertexData)));
     indexBuffer = makePrivateBuffer(device, cmdQueue, finalIndices.data(), static_cast<uint32_t>(finalIndices.size() * sizeof(uint32_t)));
     
     vertexBuffer->setLabel(NS::String::string("Vertex Buffer", NS::UTF8StringEncoding));
     indexBuffer->setLabel(NS::String::string("Index Buffer", NS::UTF8StringEncoding));
-    
-    triangleCount = finalIndices.size() / 3;
-    vertexCount = finalVertices.size();
 }
 
 void Model::buildVertexData(const std::vector<simd::float3>& vertices, const std::vector<simd::float3>& normals, const std::vector<simd::float2>& texcoords, const std::vector<tinyobj::index_t>& indices) {
@@ -81,6 +79,27 @@ void Model::buildVertexData(const std::vector<simd::float3>& vertices, const std
             finalIndices.push_back(it->second);
         }
     }
+    
+    triangleCount = finalIndices.size() / 3;
+    vertexCount = finalVertices.size();
+}
+
+void Model::computeTBNs() {
+    SMikkTSpaceInterface mikkInterface = {
+        .m_getNumFaces = getNumFaces,
+        .m_getNumVerticesOfFace = getNumVerticesOfFace,
+        .m_getPosition = getPosition,
+        .m_getNormal = getNormal,
+        .m_getTexCoord = getTexCoord,
+        .m_setTSpaceBasic = setTSpaceBasic
+    };
+    
+    SMikkTSpaceContext mikkContext{
+        .m_pInterface = &mikkInterface,
+        .m_pUserData = this
+    };
+
+    genTangSpaceDefault(&mikkContext);
 }
 
 MTL::Buffer* Model::getVertexBuffer() const {
@@ -99,6 +118,56 @@ size_t Model::getVertexCount() const {
     return vertexCount;
 }
 
-const std::vector<uint32_t> Model::getIndices() const {
+const std::vector<uint32_t>& Model::getIndices() const {
     return finalIndices;
+}
+const std::vector<ModelVertexData>& Model::getVertices() const {
+    return finalVertices;
+}
+
+int getNumFaces(const SMikkTSpaceContext* ctx) {
+    Model* mesh = (Model*)ctx->m_pUserData;
+    return static_cast<int>(mesh->getTriangleCount());
+}
+
+int getNumVerticesOfFace(const SMikkTSpaceContext* ctx, int face) {
+    return 3; // Always triangles
+}
+
+void getPosition(const SMikkTSpaceContext* ctx, float fvPosOut[3], int face, int vert) {
+    Model* mesh = (Model*)ctx->m_pUserData;
+    uint32_t idx = mesh->getIndices()[face * 3 + vert];
+    
+    const std::vector<ModelVertexData>& vertices = mesh->getVertices();
+    fvPosOut[0] = vertices[idx].pos.x;
+    fvPosOut[1] = vertices[idx].pos.y;
+    fvPosOut[2] = vertices[idx].pos.z;
+}
+
+void getNormal(const SMikkTSpaceContext* ctx, float fvNormOut[3], int face, int vert) {
+    Model* mesh = (Model*)ctx->m_pUserData;
+    uint32_t idx = mesh->getIndices()[face * 3 + vert];
+    
+    const std::vector<ModelVertexData>& vertices = mesh->getVertices();
+    fvNormOut[0] = vertices[idx].normal.x;
+    fvNormOut[1] = vertices[idx].normal.y;
+    fvNormOut[2] = vertices[idx].normal.z;
+}
+
+void getTexCoord(const SMikkTSpaceContext* ctx, float fvTexcOut[2], int face, int vert) {
+    Model* mesh = (Model*)ctx->m_pUserData;
+    uint32_t idx = mesh->getIndices()[face * 3 + vert];
+    
+    const std::vector<ModelVertexData>& vertices = mesh->getVertices();
+    fvTexcOut[0] = vertices[idx].uv.x;
+    fvTexcOut[1] = vertices[idx].uv.y;
+}
+
+void setTSpaceBasic(const SMikkTSpaceContext* ctx, const float fvTangent[3], float fSign, int face, int vert) {
+    Model* mesh = (Model*)ctx->m_pUserData;
+    uint32_t idx = mesh->getIndices()[face * 3 + vert];
+    
+    std::vector<ModelVertexData>& vertices = mesh->finalVertices;  // this is a friend function so we cand o this
+    vertices[idx].tangent = simd::float3{fvTangent[0], fvTangent[1], fvTangent[2]};
+    vertices[idx].sign = fSign;
 }
