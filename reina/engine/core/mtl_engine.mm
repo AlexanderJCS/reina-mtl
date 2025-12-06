@@ -106,7 +106,7 @@ void MTLEngine::createAccStructs() {
     std::shared_ptr<Model> cornell = std::make_shared<Model>(device.get(), cmdQueue.get(), "assets/cornell_box.obj");
     std::shared_ptr<Model> cornellLight = std::make_shared<Model>(device.get(), cmdQueue.get(), "assets/cornell_light.obj");
     std::shared_ptr<Model> triangle = std::make_shared<Model>(device.get(), cmdQueue.get(), "assets/triangle.obj");
-//    std::shared_ptr<Model> bunny = std::make_shared<Model>(device.get(), cmdQueue.get(), "assets/bunny.obj");
+    std::shared_ptr<Model> bunny = std::make_shared<Model>(device.get(), cmdQueue.get(), "assets/bunny.obj");
     childAccStructs = std::vector<std::unique_ptr<TriangleAccelerationStructure>>{};
     
     childAccStructs.push_back(std::make_unique<TriangleAccelerationStructure>(device.get(), cmdQueue.get(), *cornell));
@@ -118,7 +118,7 @@ void MTLEngine::createAccStructs() {
 //    scene->addObject(triangle, white, matrix_identity_float4x4);
     scene->addObject(cornell, white, matrix_identity_float4x4);
     scene->addObject(cornellLight, emissive, matrix_identity_float4x4);
-//    scene->addObject(bunny, red, matrix_identity_float4x4);
+    scene->addObject(bunny, red, matrix_identity_float4x4);
     scene->build(device.get(), cmdQueue.get());
     
     std::vector<MTL::AccelerationStructure*> subStructs;

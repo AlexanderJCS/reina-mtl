@@ -62,11 +62,13 @@ void Model::buildVertexData(const std::vector<simd::float3>& vertices, const std
     std::unordered_map<ModelVertexData, int, ModelVertexHash> idxMap;
     
     for (const tinyobj::index_t& idx : indices) {
+        simd::float2 texcoord = texcoords.size() == 0 ? simd::float2(0) : texcoords[idx.texcoord_index];
+        
         ModelVertexData vertex{
             .pos = vertices[idx.vertex_index],
             .normal = normals[idx.normal_index],
             .tangent = simd::float3(0),
-            .uv = texcoords[idx.texcoord_index],
+            .uv = texcoord,
             .sign = 1
         };
         
