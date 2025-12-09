@@ -68,7 +68,7 @@ void MTLEngine::initDevice() {
 
 void MTLEngine::createBuffers() {
     simd::float4x4 proj = makePerspective(1.57f / 3.0f, float(WIDTH)/float(HEIGHT), 0.01f, 1e6);
-    simd::float4x4 view = lookAt(simd::float3{0, 1, -6}, simd::float3{0, 1.0, 0}, simd::float3{0, 1, 0});
+    simd::float4x4 view = lookAt(simd::float3{0, 1, -5}, simd::float3{0, 1, 0}, simd::float3{0, 1, 0});
     
     CameraData viewProjBufferContents{
         .invView = simd::inverse(view),
@@ -116,11 +116,11 @@ void MTLEngine::createAccStructs() {
     std::shared_ptr<Material> red = std::make_shared<Material>(0, simd::float3{0.9f, 0.7f, 0.6f}, simd::float3{0, 0, 0}, 0);
     std::shared_ptr<Material> white = std::make_shared<Material>(0, simd::float3{0.9f, 0.9f, 0.9f}, 0);
     std::shared_ptr<Material> emissive = std::make_shared<Material>(0, simd::float3{0.9f, 0.7f, 0.6f}, simd::float3{10, 10, 10}, 0);
-    scene->addObject(ball, white, matrix_identity_float4x4);
+//    scene->addObject(ball, red, matrix_identity_float4x4);
 //    scene->addObject(triangle, white, matrix_identity_float4x4);
-//    scene->addObject(cornell, white, matrix_identity_float4x4);
-//    scene->addObject(cornellLight, emissive, matrix_identity_float4x4);
-//    scene->addObject(bunny, red, matrix_identity_float4x4);
+    scene->addObject(cornell, white, matrix_identity_float4x4);
+    scene->addObject(cornellLight, emissive, matrix_identity_float4x4);
+    scene->addObject(bunny, red, matrix_identity_float4x4);
     
     scene->build(device.get(), cmdQueue.get());
     
@@ -167,8 +167,7 @@ void MTLEngine::createCommandQueue() {
     cmdQueue = NS::TransferPtr(device->newCommandQueue());
 }
 
-void MTLEngine::createAllComputePSOs()
-{
+void MTLEngine::createAllComputePSOs() {
     NS::String* raytraceMainName =
         NS::String::alloc()->init("raytraceMain", NS::UTF8StringEncoding);
 

@@ -90,7 +90,7 @@
 //    float3 wiTangent = float3(transpose(tbn) * wi_world);
 //    float3 woTangent = float3(transpose(tbn) * wo_world);
 //
-//    float3 alpha = float2(alphax, alphay);
+//    float2 alpha = float2(alphax, alphay);
 //
 //    return pdfGGXReflection(wiTangent, woTangent, alpha);
 //}

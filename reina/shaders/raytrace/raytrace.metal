@@ -9,39 +9,70 @@ struct HitInfo {
     bool hit;
     bool backface;
     float3 pos;
-    float3 normal;
+    float3 geomNormal;
+    float3x3 tbn;
     uint32_t materialIdx;
 };
 
+float3 computeGeometryNormal(float3 v0, float3 v1, float3 v2) {
+    return normalize(cross(v1 - v0, v2 - v0));
+}
+
+template <typename T>
+T geomInterpolate(float3 bary, T a, T b, T c) {
+    return a * bary.x + b * bary.y + c * bary.z;
+}
+
 HitInfo intersectScene(ray r, intersector<triangle_data, instancing> i, acceleration_structure<instancing> as, device const ModelVertexData* vertices, device const uint* indices, device const Material* materials, device const InstanceData* instanceData) {
-    intersection_result<triangle_data, instancing> result = i.intersect(r, as);
+    intersection_result<triangle_data, instancing> hitResult = i.intersect(r, as);
     
-    if (result.type != intersection_type::triangle) {
-        return {false, false, float3(0), float3(0), 0};
+    HitInfo hitInfo;
+    
+    if (hitResult.type != intersection_type::triangle) {
+        hitInfo.hit = false;
+        return hitInfo;
     }
     
-    // float2 bary = result.triangle_barycentric_coord;
+    hitInfo.hit = true;
+    hitInfo.materialIdx = instanceData[hitResult.instance_id].materialIdx;
     
-    int idxOffset = instanceData[result.instance_id].indexOffset;
+    float3 bary = float3(0, hitResult.triangle_barycentric_coord);
+    bary.x = 1.0 - bary.y - bary.z;
     
-    int i0 = indices[idxOffset + result.primitive_id * 3];
-    int i1 = indices[idxOffset + result.primitive_id * 3 + 1];
-    int i2 = indices[idxOffset + result.primitive_id * 3 + 2];
+    float4x4 modelMatrix = instanceData[hitResult.instance_id].transform;
+    int idxOffset = instanceData[hitResult.instance_id].indexOffset;
     
-    // TODO: transform these vertices into world space
-    float3 v0 = vertices[i0].pos;
-    float3 v1 = vertices[i1].pos;
-    float3 v2 = vertices[i2].pos;
+    int i0 = indices[idxOffset + hitResult.primitive_id * 3];
+    int i1 = indices[idxOffset + hitResult.primitive_id * 3 + 1];
+    int i2 = indices[idxOffset + hitResult.primitive_id * 3 + 2];
     
-    float3 pos = r.origin + r.direction * result.distance;
+    ModelVertexData v0 = vertices[i0];
+    ModelVertexData v1 = vertices[i1];
+    ModelVertexData v2 = vertices[i2];
     
-    float3 norm = normalize(cross(v1 - v0, v2 - v0));
-    bool backface = dot(norm, r.direction) > 0;
-    if (backface) {
-        norm *= -1;
+    // Transform the vertices into world space to account for instance rotation
+    v0.pos = float3(modelMatrix * float4(v0.pos, 1));
+    v1.pos = float3(modelMatrix * float4(v1.pos, 1));
+    v2.pos = float3(modelMatrix * float4(v2.pos, 1));
+    
+    hitInfo.pos = r.origin + r.direction * hitResult.distance;
+    
+    hitInfo.geomNormal = computeGeometryNormal(v0.pos, v1.pos, v2.pos);
+    hitInfo.backface = dot(hitInfo.geomNormal, r.direction) > 0;
+    if (hitInfo.backface) {
+        hitInfo.geomNormal *= -1;
     }
     
-    return {true, backface, pos, norm, instanceData[result.instance_id].materialIdx};
+    float w = geomInterpolate(bary, v0.sign, v1.sign, v2.sign);
+    hitInfo.tbn = float3x3(
+        geomInterpolate(bary, v0.tangent, v1.tangent, v2.tangent),
+        float3(0),
+        geomInterpolate(bary, v0.normal, v1.normal, v2.normal)
+    );
+    
+    hitInfo.tbn[1] = w * cross(hitInfo.tbn[2], hitInfo.tbn[0]);
+    
+    return hitInfo;
 }
 
 uint hash(uint x) {
@@ -188,7 +219,7 @@ ray getStartingRay(
 }
 
 float3 skyColor(float3 dir) {
-    return mix(float3(1, 1, 1), float3(0.3, 0.5, 1.0), saturate(dir.y * 0.5 + 0.5));
+    return mix(float3(0), float3(1), saturate(dir.y * 0.5 + 0.5));
 }
 
 float3 runRaytrace(ray r, intersector<triangle_data, instancing> i, device const ModelVertexData* vertices, device const InstanceData* instanceData, device const uint* indices, device const Material* materials, acceleration_structure<instancing> as, thread uint& seed) {
@@ -204,15 +235,15 @@ float3 runRaytrace(ray r, intersector<triangle_data, instancing> i, device const
         }
         
 #ifdef DEBUG_SHOW_NORMALS
-        return hit.normal * 0.5 + 0.5;
+        return hit.tbn[2] * 0.5 + 0.5;
 #endif
         
         Material mat = materials[hit.materialIdx];
         throughput *= mat.color;
         incomingLight += mat.emission * throughput;
         
-        r.origin = hit.pos + hit.normal * 0.0001;
-        r.direction = sampleCosineHemisphere(hit.normal, seed);
+        r.origin = hit.pos + hit.tbn[2] * 0.0001;
+        r.direction = sampleCosineHemisphere(hit.tbn[2], seed);
     }
     
     return incomingLight;

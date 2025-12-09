@@ -54,7 +54,7 @@ private:
     void initDevice();
     void initWindow();
 
-    static constexpr uint WIDTH = 800;
+    static constexpr uint WIDTH = 600;
     static constexpr uint HEIGHT = 600;
     int drawableWidth;
     int drawableHeight;

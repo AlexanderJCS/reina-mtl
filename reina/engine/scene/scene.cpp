@@ -9,6 +9,7 @@ void Scene::addObject(const std::shared_ptr<Model>& model, const std::shared_ptr
     instanceTransforms.push_back(transform);
     
     InstanceData instanceData;
+    instanceData.transform = transform;
     
     bool foundMaterial = false;
     for (uint32_t i = 0; i < materials.size(); i++) {

@@ -64,7 +64,7 @@ void Model::buildVertexData(const std::vector<simd::float3>& vertices, const std
         
         ModelVertexData vertex{
             .pos = vertices[idx.vertex_index],
-            .normal = normals[idx.normal_index],
+            .normal = (idx.normal_index >= 0 && idx.normal_index < normals.size()) ? normals[idx.normal_index] : simd::float3(0),
             .tangent = simd::float3(0),
             .uv = texcoord,
             .sign = 1
