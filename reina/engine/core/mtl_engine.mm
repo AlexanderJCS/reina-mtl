@@ -114,13 +114,14 @@ void MTLEngine::createAccStructs() {
     
     scene = std::make_unique<Scene>();
     std::shared_ptr<Material> red = std::make_shared<Material>(0, simd::float3{0.9f, 0.7f, 0.6f}, simd::float3{0, 0, 0}, 0);
+    std::shared_ptr<Material> mirror = std::make_shared<Material>(1, simd::float3(0.9f), simd::float3{0, 0, 0}, 0);
     std::shared_ptr<Material> white = std::make_shared<Material>(0, simd::float3{0.9f, 0.9f, 0.9f}, 0);
     std::shared_ptr<Material> emissive = std::make_shared<Material>(0, simd::float3{0.9f, 0.7f, 0.6f}, simd::float3{10, 10, 10}, 0);
 //    scene->addObject(ball, red, matrix_identity_float4x4);
 //    scene->addObject(triangle, white, matrix_identity_float4x4);
-    scene->addObject(cornell, white, matrix_identity_float4x4);
+//    scene->addObject(cornell, white, matrix_identity_float4x4);
     scene->addObject(cornellLight, emissive, matrix_identity_float4x4);
-    scene->addObject(bunny, red, matrix_identity_float4x4);
+    scene->addObject(ball, mirror, matrix_identity_float4x4);
     
     scene->build(device.get(), cmdQueue.get());
     

@@ -7,7 +7,7 @@
     #define SHARED_CONST constexpr
 #endif
 
-#define DEBUG_SHOW_NORMALS
+// #define DEBUG_SHOW_NORMALS
 
 SHARED_CONST uint INPUT_TEXTURE_IDX = 0;
 SHARED_CONST uint OUTPUT_TEXTURE_IDX = 1;
