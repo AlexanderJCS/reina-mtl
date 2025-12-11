@@ -1,4 +1,5 @@
 #include "texture.hpp"
+#include <iostream>
 
 Texture::Texture(const char* filepath, MTL::Device* device, MTL::TextureUsage usage) {
     stbi_set_flip_vertically_on_load(true);
@@ -33,4 +34,6 @@ void Texture::init(MTL::Device* device, MTL::PixelFormat pixelFormat, MTL::Textu
 
 Texture::~Texture() {
     texture->release();
+    texture = nullptr;
+    std::cout << "Releasing texture!\n";
 }

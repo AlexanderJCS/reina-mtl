@@ -127,8 +127,8 @@ float3 evalMetal(float3x3 tbn, float3 baseColor, float anisotropic, float roughn
     float dm = evalDm(hTangent, alphax, alphay);
     float gm = evalGm(wiTangent, woTangent, alphax, alphay);
 
-    float NdotWi = abs(dot(n, wi));
-    float NdotWo = abs(dot(n, wo));
+    float NdotWi = abs(wiTangent.z);
+    float NdotWo = abs(woTangent.z);
 
     return fm * dm * gm / (4.0 * NdotWi * NdotWo);
 }

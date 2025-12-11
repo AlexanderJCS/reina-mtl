@@ -108,33 +108,23 @@ void MTLEngine::createAccStructs() {
     std::shared_ptr<Model> triangle = std::make_shared<Model>(device.get(), cmdQueue.get(), "assets/triangle.obj");
     std::shared_ptr<Model> bunny = std::make_shared<Model>(device.get(), cmdQueue.get(), "assets/bunny.obj");
     std::shared_ptr<Model> ball = std::make_shared<Model>(device.get(), cmdQueue.get(), "assets/uv_sphere_highres.obj");
-    childAccStructs = std::vector<std::unique_ptr<TriangleAccelerationStructure>>{};
-    
-    childAccStructs.push_back(std::make_unique<TriangleAccelerationStructure>(device.get(), cmdQueue.get(), *cornell));
     
     scene = std::make_unique<Scene>();
-    std::shared_ptr<Material> red = std::make_shared<Material>(0, simd::float3{0.9f, 0.7f, 0.6f}, simd::float3{0, 0, 0}, 0);
-    std::shared_ptr<Material> mirror = std::make_shared<Material>(1, simd::float3(0.9f), simd::float3{0, 0, 0}, 0);
-    std::shared_ptr<Material> white = std::make_shared<Material>(0, simd::float3{0.9f, 0.9f, 0.9f}, 0);
-    std::shared_ptr<Material> emissive = std::make_shared<Material>(0, simd::float3{0.9f, 0.7f, 0.6f}, simd::float3{10, 10, 10}, 0);
+    std::shared_ptr<Material> red = std::make_shared<Material>(0, -1, simd::float3{0.9f, 0.7f, 0.6f}, simd::float3{0, 0, 0}, 0);
+    std::shared_ptr<Material> mirror = std::make_shared<Material>(1, -1, simd::float3(0.9f), simd::float3{0, 0, 0}, 0);
+    std::shared_ptr<Material> white = std::make_shared<Material>(0, -1, simd::float3{0.9f, 0.9f, 0.9f}, 0);
+    std::shared_ptr<Material> textured = std::make_shared<Material>(0, 0, simd::float3{0.9f, 0.9f, 0.9f}, 0);
+    std::shared_ptr<Material> emissive = std::make_shared<Material>(0, -1, simd::float3{0.9f, 0.7f, 0.6f}, simd::float3{10, 10, 10}, 0);
 //    scene->addObject(ball, red, matrix_identity_float4x4);
 //    scene->addObject(triangle, white, matrix_identity_float4x4);
 //    scene->addObject(cornell, white, matrix_identity_float4x4);
     scene->addObject(cornellLight, emissive, matrix_identity_float4x4);
     scene->addObject(ball, mirror, matrix_identity_float4x4);
     
+    auto tex = std::make_shared<Texture>("assets/8k_earth_daymap.jpg", device.get(), MTL::TextureUsageShaderRead);
+    scene->addTexture(tex);
+    
     scene->build(device.get(), cmdQueue.get());
-    
-    std::vector<MTL::AccelerationStructure*> subStructs;
-    for (const std::unique_ptr<TriangleAccelerationStructure>& accStruct : childAccStructs) {
-        subStructs.push_back(accStruct->getAccelerationStructure());
-    }
-
-    std::vector<simd::float4x4> transforms{
-        matrix_identity_float4x4
-    };
-    
-    instanceAccStruct = std::make_unique<InstanceAccelerationStructure>(device.get(), cmdQueue.get(), subStructs, transforms);
 }
 
 void MTLEngine::createSquare() {
@@ -233,6 +223,10 @@ void MTLEngine::runRaytrace() {
     encoder->setBuffer(frameParamsBuffer.get(), 0, FRAME_PARAMS_BUFFER_IDX);
     encoder->setBuffer(scene->getInstanceDataBuffer(), 0, INSTANCE_DATA_BUFFER_IDX);
     encoder->setBuffer(scene->getMaterialBuffer(), 0, MATERIAL_BUFFER_IDX);
+    
+    for (uint32_t i = 0; i < scene->getTextures().size(); i++) {
+        encoder->setTexture(scene->getTextures()[i]->texture, i + TEXTURE_ARRAY_IDX);
+    }
     
     MTL::Size gridSize = MTL::Size(rtPing->width, rtPing->height, 1);
     MTL::Size threadgroupSize = MTL::Size(8, 8, 1);

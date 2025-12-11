@@ -10,6 +10,9 @@ public:
     Texture(MTL::Device* device, int width, int height, int channels, MTL::PixelFormat pixelFormat, MTL::TextureUsage usage);
     ~Texture();
     
+    Texture(const Texture&) = delete;
+    Texture& operator=(const Texture&) = delete;
+    
     MTL::Texture* texture;
     int width, height, channels;
     

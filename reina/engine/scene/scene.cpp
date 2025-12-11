@@ -46,6 +46,19 @@ void Scene::addObject(const std::shared_ptr<Model>& model, const std::shared_ptr
     instanceDataVec.push_back(instanceData);
 }
 
+void Scene::addTexture(const std::shared_ptr<Texture>& texture) {
+    textures.push_back(texture);
+    
+    if (textures.size() > NUM_TEXTURES) {
+        std::cerr << "Number of textures > max texture size!\n";
+        exit(1);
+    }
+}
+
+const std::vector<std::shared_ptr<Texture>>& Scene::getTextures() {
+    return textures;
+}
+
 void Scene::build(MTL::Device* device, MTL::CommandQueue* cmdQueue) {
     buildModelDataBuffers(device, cmdQueue);
     buildChildAccStructs(device, cmdQueue);

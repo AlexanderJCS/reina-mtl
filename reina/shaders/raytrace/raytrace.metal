@@ -223,6 +223,7 @@ kernel void raytraceMain(acceleration_structure<instancing> as[[buffer(ACC_STRUC
                          constant FrameParams& frameParams [[buffer(FRAME_PARAMS_BUFFER_IDX)]],
                          texture2d<float, access::read_write> inTex [[texture(INPUT_TEXTURE_IDX)]],
                          texture2d<float, access::read_write> outTex [[texture(OUTPUT_TEXTURE_IDX)]],
+                         const array<texture2d<float>, NUM_TEXTURES> myTextures [[texture(TEXTURE_ARRAY_IDX)]],
                          uint2 gid [[thread_position_in_grid]]) {
 #ifdef DEBUG_SHOW_NORMALS
     uint raysPerBatch = 1;

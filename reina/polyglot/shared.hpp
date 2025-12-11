@@ -18,6 +18,9 @@ SHARED_CONST uint INDICES_BUFFER_IDX = 3;
 SHARED_CONST uint FRAME_PARAMS_BUFFER_IDX = 4;
 SHARED_CONST uint INSTANCE_DATA_BUFFER_IDX = 5;
 SHARED_CONST uint MATERIAL_BUFFER_IDX = 6;
+SHARED_CONST uint TEXTURE_ARRAY_BUFFER_IDX = 7;
+SHARED_CONST uint NUM_TEXTURES = 16;
+SHARED_CONST uint TEXTURE_ARRAY_IDX = 2;  // Binds textures from TEXTURE_ARRAY_IDX to TEXTURE_ARRAY_IDX + NUM_TEXTURES - 1
 
 #ifdef __METAL_VERSION__
     #include <metal_stdlib>
@@ -44,6 +47,7 @@ struct FullscreenQuadVertexData {
 
 struct Material {
     uint32_t materialID;
+    int32_t textureID;
     MATH_PREFIX::float3 color;
     MATH_PREFIX::float3 emission;
     float roughness;

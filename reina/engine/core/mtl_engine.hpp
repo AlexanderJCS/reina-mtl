@@ -59,9 +59,6 @@ private:
     int drawableWidth;
     int drawableHeight;
     
-    std::vector<std::unique_ptr<TriangleAccelerationStructure>> childAccStructs;
-    std::unique_ptr<InstanceAccelerationStructure> instanceAccStruct;
-    
     NS::SharedPtr<MTL::Device> device;
     GLFWwindow* glfwWindow;
     NSWindow* metalWindow;
