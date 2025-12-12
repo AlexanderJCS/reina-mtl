@@ -48,6 +48,8 @@ struct FullscreenQuadVertexData {
 struct Material {
     uint32_t materialID;
     int32_t textureID;
+    int32_t normalMapID;
+    int32_t roughnessMapID;
     MATH_PREFIX::float3 color;
     MATH_PREFIX::float3 emission;
     float roughness;

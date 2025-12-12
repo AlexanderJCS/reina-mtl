@@ -13,6 +13,8 @@ struct HitInfo {
     float3 pos;
     float3 geomNormal;
     float3x3 tbn;
+    float3x3 mappedTBN;
+    float roughness;
     uint32_t materialIdx;
     float2 uv;
 };
@@ -26,7 +28,7 @@ T geomInterpolate(float3 bary, T a, T b, T c) {
     return a * bary.x + b * bary.y + c * bary.z;
 }
 
-HitInfo intersectScene(ray r, intersector<triangle_data, instancing> i, acceleration_structure<instancing> as, device const ModelVertexData* vertices, device const uint* indices, device const Material* materials, device const InstanceData* instanceData, const array<texture2d<float>, NUM_TEXTURES> myTextures) {
+HitInfo intersectScene(ray r, intersector<triangle_data, instancing> i, acceleration_structure<instancing> as, device const ModelVertexData* vertices, device const uint* indices, device const Material* materials, device const InstanceData* instanceData, const array<texture2d<float>, NUM_TEXTURES> textures) {
     intersection_result<triangle_data, instancing> hitResult = i.intersect(r, as);
     
     HitInfo hitInfo;
@@ -76,6 +78,27 @@ HitInfo intersectScene(ray r, intersector<triangle_data, instancing> i, accelera
     );
     
     hitInfo.tbn[1] = w * cross(hitInfo.tbn[2], hitInfo.tbn[0]);
+    
+    constexpr sampler s(address::clamp_to_edge, filter::linear);
+    
+    hitInfo.mappedTBN = hitInfo.tbn;
+    int normalMapID = materials[hitInfo.materialIdx].normalMapID;
+    if (normalMapID >= 0) {
+        float3 normalMapValue = float3(textures[normalMapID].sample(s, hitInfo.uv)) * 2.0 - 1.0;
+        
+        float3 N = normalize(hitInfo.tbn * normalMapValue);
+        float3 T = hitInfo.tbn[0];
+        T = normalize(T - N * dot(T, N));
+        float3 B = cross(N, T);
+
+        hitInfo.mappedTBN = float3x3(T, B, N);
+    }
+    
+    hitInfo.roughness = materials[hitInfo.materialIdx].roughness;
+    int roughnessMapID = materials[hitInfo.materialIdx].roughnessMapID;
+    if (roughnessMapID >= 0) {
+        hitInfo.roughness = textures[normalMapID].sample(s, hitInfo.uv).r;
+    }
     
     return hitInfo;
 }
@@ -214,10 +237,10 @@ float3 runRaytrace(ray r, intersector<triangle_data, instancing> i, device const
         r.origin = hit.pos + hit.tbn[2] * 0.0001;
         
         if (mat.materialID == 0) {
-            r.direction = sampleCosineHemisphere(hit.tbn[2], seed);
+            r.direction = sampleCosineHemisphere(hit.mappedTBN[2], seed);
         } else {
             // float3x3 tbn, float anisotropic, float roughness, float3 wi, thread uint& rngState)
-            r.direction = sampleMetal(hit.tbn, 0.5f, 0.8f, -r.direction, seed);
+            r.direction = sampleMetal(hit.mappedTBN, 0.0f, hit.roughness, -r.direction, seed);
         }
     }
     

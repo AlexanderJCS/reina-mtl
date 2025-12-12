@@ -110,11 +110,11 @@ void MTLEngine::createAccStructs() {
     std::shared_ptr<Model> ball = std::make_shared<Model>(device.get(), cmdQueue.get(), "assets/uv_sphere_highres.obj");
     
     scene = std::make_unique<Scene>();
-    std::shared_ptr<Material> red = std::make_shared<Material>(0, -1, simd::float3{0.9f, 0.7f, 0.6f}, simd::float3{0, 0, 0}, 0);
-    std::shared_ptr<Material> mirror = std::make_shared<Material>(1, -1, simd::float3(0.9f), simd::float3{0, 0, 0}, 0);
-    std::shared_ptr<Material> white = std::make_shared<Material>(0, -1, simd::float3{0.9f, 0.9f, 0.9f}, 0);
-    std::shared_ptr<Material> textured = std::make_shared<Material>(0, 0, simd::float3(1), 0);
-    std::shared_ptr<Material> emissive = std::make_shared<Material>(0, -1, simd::float3{0.9f, 0.7f, 0.6f}, simd::float3{10, 10, 10}, 0);
+    std::shared_ptr<Material> red = std::make_shared<Material>(0, -1, -1, -1, simd::float3{0.9f, 0.7f, 0.6f}, simd::float3{0, 0, 0}, 0);
+    std::shared_ptr<Material> mirror = std::make_shared<Material>(1, -1, -1, -1, simd::float3(0.9f), simd::float3{0, 0, 0}, 0);
+    std::shared_ptr<Material> white = std::make_shared<Material>(0, -1, -1, -1, simd::float3{0.9f, 0.9f, 0.9f}, 0);
+    std::shared_ptr<Material> textured = std::make_shared<Material>(1, 0, 1, 2, simd::float3(1), 0);
+    std::shared_ptr<Material> emissive = std::make_shared<Material>(0, -1, -1, -1, simd::float3{0.9f, 0.7f, 0.6f}, simd::float3{10, 10, 10}, 0);
 //    scene->addObject(ball, red, matrix_identity_float4x4);
 //    scene->addObject(triangle, white, matrix_identity_float4x4);
 //    scene->addObject(cornell, white, matrix_identity_float4x4);
@@ -122,8 +122,10 @@ void MTLEngine::createAccStructs() {
     scene->addObject(ball, textured, matrix_identity_float4x4);
     
     auto tex = std::make_shared<Texture>("assets/Leather037_2K-PNG/Leather037_2K-PNG_Color.png", device.get(), MTL::TextureUsageShaderRead, MTL::PixelFormatRGBA8Unorm);
-    auto normal = std::make_shared<Texture>("assets/Leather037_2K-PNG/Leather037_2K-PNG_NormalDX.png", device.get(), MTL::TextureUsageShaderRead, MTL::PixelFormatRGBA8Unorm);
+    auto normal = std::make_shared<Texture>("assets/Leather037_2K-PNG/Leather037_2K-PNG_NormalGL.png", device.get(), MTL::TextureUsageShaderRead, MTL::PixelFormatRGBA8Unorm);
+    auto roughness = std::make_shared<Texture>("assets/Leather037_2K-PNG/Leather037_2K-PNG_Roughness.png", device.get(), MTL::TextureUsageShaderRead, MTL::PixelFormatR8Unorm);
     scene->addTexture(tex);
+    scene->addTexture(normal);
     
     scene->build(device.get(), cmdQueue.get());
 }
