@@ -119,7 +119,7 @@ void MTLEngine::createAccStructs() {
 //    scene->addObject(triangle, white, matrix_identity_float4x4);
 //    scene->addObject(cornell, white, matrix_identity_float4x4);
     scene->addObject(cornellLight, emissive, matrix_identity_float4x4);
-    scene->addObject(ball, mirror, matrix_identity_float4x4);
+    scene->addObject(ball, textured, matrix_identity_float4x4);
     
     auto tex = std::make_shared<Texture>("assets/8k_earth_daymap.jpg", device.get(), MTL::TextureUsageShaderRead);
     scene->addTexture(tex);

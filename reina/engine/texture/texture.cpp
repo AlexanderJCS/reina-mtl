@@ -35,5 +35,4 @@ void Texture::init(MTL::Device* device, MTL::PixelFormat pixelFormat, MTL::Textu
 Texture::~Texture() {
     texture->release();
     texture = nullptr;
-    std::cout << "Releasing texture!\n";
 }

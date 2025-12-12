@@ -14,6 +14,7 @@ struct HitInfo {
     float3 geomNormal;
     float3x3 tbn;
     uint32_t materialIdx;
+    float2 uv;
 };
 
 float3 computeGeometryNormal(float3 v0, float3 v1, float3 v2) {
@@ -25,7 +26,7 @@ T geomInterpolate(float3 bary, T a, T b, T c) {
     return a * bary.x + b * bary.y + c * bary.z;
 }
 
-HitInfo intersectScene(ray r, intersector<triangle_data, instancing> i, acceleration_structure<instancing> as, device const ModelVertexData* vertices, device const uint* indices, device const Material* materials, device const InstanceData* instanceData) {
+HitInfo intersectScene(ray r, intersector<triangle_data, instancing> i, acceleration_structure<instancing> as, device const ModelVertexData* vertices, device const uint* indices, device const Material* materials, device const InstanceData* instanceData, const array<texture2d<float>, NUM_TEXTURES> myTextures) {
     intersection_result<triangle_data, instancing> hitResult = i.intersect(r, as);
     
     HitInfo hitInfo;
@@ -64,6 +65,8 @@ HitInfo intersectScene(ray r, intersector<triangle_data, instancing> i, accelera
     if (hitInfo.backface) {
         hitInfo.geomNormal *= -1;
     }
+    
+    hitInfo.uv = geomInterpolate(bary, v0.uv, v1.uv, v2.uv);
     
     float w = geomInterpolate(bary, v0.sign, v1.sign, v2.sign);
     hitInfo.tbn = float3x3(
@@ -181,12 +184,12 @@ float3 skyColor(float3 dir) {
     return mix(float3(0), float3(1), saturate(dir.y * 0.5 + 0.5));
 }
 
-float3 runRaytrace(ray r, intersector<triangle_data, instancing> i, device const ModelVertexData* vertices, device const InstanceData* instanceData, device const uint* indices, device const Material* materials, acceleration_structure<instancing> as, thread uint& seed) {
+float3 runRaytrace(ray r, intersector<triangle_data, instancing> i, device const ModelVertexData* vertices, device const InstanceData* instanceData, device const uint* indices, device const Material* materials, acceleration_structure<instancing> as, thread uint& seed, const array<texture2d<float>, NUM_TEXTURES> textures) {
     float3 throughput = float3(1);
     float3 incomingLight = float3(0);
     
     for (int tracedSegments = 0; tracedSegments < 10; tracedSegments++) {
-        HitInfo hit = intersectScene(r, i, as, vertices, indices, materials, instanceData);
+        HitInfo hit = intersectScene(r, i, as, vertices, indices, materials, instanceData, textures);
         
         if (!hit.hit) {
             incomingLight += skyColor(r.direction) * throughput;
@@ -198,7 +201,14 @@ float3 runRaytrace(ray r, intersector<triangle_data, instancing> i, device const
 #endif
         
         Material mat = materials[hit.materialIdx];
-        throughput *= mat.color;
+        
+        float3 color = mat.color;
+        if (mat.textureID >= 0) {
+            constexpr sampler s(address::repeat, filter::linear);
+            color *= float3(textures[mat.textureID].sample(s, hit.uv));
+        }
+        
+        throughput *= color;
         incomingLight += mat.emission * throughput;
         
         r.origin = hit.pos + hit.tbn[2] * 0.0001;
@@ -223,7 +233,7 @@ kernel void raytraceMain(acceleration_structure<instancing> as[[buffer(ACC_STRUC
                          constant FrameParams& frameParams [[buffer(FRAME_PARAMS_BUFFER_IDX)]],
                          texture2d<float, access::read_write> inTex [[texture(INPUT_TEXTURE_IDX)]],
                          texture2d<float, access::read_write> outTex [[texture(OUTPUT_TEXTURE_IDX)]],
-                         const array<texture2d<float>, NUM_TEXTURES> myTextures [[texture(TEXTURE_ARRAY_IDX)]],
+                         const array<texture2d<float>, NUM_TEXTURES> textures [[texture(TEXTURE_ARRAY_IDX)]],
                          uint2 gid [[thread_position_in_grid]]) {
 #ifdef DEBUG_SHOW_NORMALS
     uint raysPerBatch = 1;
@@ -248,7 +258,7 @@ kernel void raytraceMain(acceleration_structure<instancing> as[[buffer(ACC_STRUC
     float3 sum = float3(0);
     for (uint i = 0; i < raysPerBatch; i++) {
         r = getStartingRay(seed, float2(gid), float2(width, height), matrices.invView, matrices.invProj);
-        sum += runRaytrace(r, intersect, vertices, instanceData, indices, materials, as, seed);
+        sum += runRaytrace(r, intersect, vertices, instanceData, indices, materials, as, seed, textures);
     }
     
     float4 thisColor = float4(sum / raysPerBatch, 1);
