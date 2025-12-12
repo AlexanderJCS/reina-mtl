@@ -1,12 +1,12 @@
 #include "texture.hpp"
 #include <iostream>
 
-Texture::Texture(const char* filepath, MTL::Device* device, MTL::TextureUsage usage) {
+Texture::Texture(const char* filepath, MTL::Device* device, MTL::TextureUsage usage, MTL::PixelFormat format) {
     stbi_set_flip_vertically_on_load(true);
     unsigned char* image = stbi_load(filepath, &width, &height, &channels, STBI_rgb_alpha);
     assert(image != NULL);
 
-    init(device, MTL::PixelFormatRGBA8Unorm, usage);
+    init(device, format, usage);
 
     MTL::Region region = MTL::Region(0, 0, 0, width, height, 1);
     NS::UInteger bytesPerRow = 4 * width;
