@@ -79,13 +79,8 @@ float luminance(float3 color) {
     return dot(color, float3(0.2126, 0.7152, 0.0722));
 }
 
-float3 evalFm(float3 baseColor, float3 h, float3 wo, float specular, float3 specularTint, float metallic, float eta) {
-    float lum = luminance(baseColor);
-    float3 ctint = lum > 0.0 ? baseColor / lum : float3(1);
-    float3 ks = (1 - ctint) + specularTint * ctint;
-    float3 c0 = specular * evalR0(eta) * (1 - metallic) * ks + metallic * baseColor;
-
-    return c0 + (1 - c0) * pow(1 - abs(dot(h, wo)), 5);
+float3 evalFm(float3 baseColor, float3 h, float3 wo) {
+    return baseColor + (1 - baseColor) * pow(1 - abs(dot(h, wo)), 5);
 }
 
 float evalDm(float3 hl, float alphax, float alphay) {
@@ -111,14 +106,14 @@ float evalGm(float3 wi, float3 wo, float alphax, float alphay) {
     return g1 * g2;
 }
 
-float3 evalMetal(float3x3 tbn, float3 baseColor, float anisotropic, float roughness, float3 n, float3 wi, float3 wo, float3 h, float specular, float3 specularTint, float metallic, float eta) {
+float3 evalMetal(float3x3 tbn, float3 baseColor, float anisotropic, float roughness, float3 n, float3 wi, float3 wo, float3 h) {
     const float alphamin = 0.0001;
 
     float aspect = sqrt(1.0 - 0.9 * anisotropic);
     float alphax = max(alphamin, roughness * roughness / aspect);
     float alphay = max(alphamin, roughness * roughness * aspect);
 
-    float3 fm = evalFm(baseColor, h, wo, specular, specularTint, metallic, eta);
+    float3 fm = evalFm(baseColor, h, wo);
 
     float3 wiTangent = normalize(float3(transpose(tbn) * wi));
     float3 woTangent = normalize(float3(transpose(tbn) * wo));

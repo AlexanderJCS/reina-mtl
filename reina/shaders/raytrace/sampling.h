@@ -25,7 +25,7 @@ float smithG(float3 wl, float alphax, float alphay);
 
 float evalGm(float3 wi, float3 wo, float alphax, float alphay);
 
-float3 evalMetal(float3x3 tbn, float3 baseColor, float anisotropic, float roughness, float3 n, float3 wi, float3 wo, float3 h, float specular, float3 specularTint, float metallic, float eta);
+float3 evalMetal(float3x3 tbn, float3 baseColor, float anisotropic, float roughness, float3 n, float3 wi, float3 wo, float3 h);
 
 float3 sampleMetal(float3x3 tbn, float anisotropic, float roughness, float3 wi, thread uint& rngState);
 

@@ -231,17 +231,26 @@ float3 runRaytrace(ray r, intersector<triangle_data, instancing> i, device const
             color *= float3(textures[mat.textureID].sample(s, hit.uv));
         }
         
-        throughput *= color;
-        incomingLight += mat.emission * throughput;
-        
         r.origin = hit.pos + hit.tbn[2] * 0.0001;
         
         if (mat.materialID == 0) {
             r.direction = sampleCosineHemisphere(hit.mappedTBN[2], seed);
         } else {
+            float3 wi = -r.direction;
+            
             // float3x3 tbn, float anisotropic, float roughness, float3 wi, thread uint& rngState)
             r.direction = sampleMetal(hit.mappedTBN, 0.0f, hit.roughness, -r.direction, seed);
+            
+            float3 wo = r.direction;
+            float3 h = normalize(wi + wo);
+            
+            
+            // float3x3 tbn, float3 baseColor, float anisotropic, float roughness, float3 n, float3 wi, float3 wo, float3 h
+            color = evalMetal(hit.mappedTBN, color, 0.0f, hit.roughness, hit.mappedTBN[2], wi, wo, h);
         }
+        
+        throughput *= color;
+        incomingLight += mat.emission * throughput;
     }
     
     return incomingLight;
