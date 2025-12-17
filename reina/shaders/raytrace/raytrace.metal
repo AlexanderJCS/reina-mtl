@@ -204,6 +204,10 @@ ray getStartingRay(
 }
 
 float3 skyColor(float3 dir) {
+#ifdef DEBUG_SKY_COLOR_GRAY
+    return float3(0.5);
+#endif
+    
     return mix(float3(0), float3(1), saturate(dir.y * 0.5 + 0.5));
 }
 
@@ -239,14 +243,20 @@ float3 runRaytrace(ray r, intersector<triangle_data, instancing> i, device const
             float3 wi = -r.direction;
             
             // float3x3 tbn, float anisotropic, float roughness, float3 wi, thread uint& rngState)
-            r.direction = sampleMetal(hit.mappedTBN, 0.0f, hit.roughness, -r.direction, seed);
+            float3 h = sampleMetal(hit.mappedTBN, 0.0f, hit.roughness, -r.direction, seed);
             
-            float3 wo = r.direction;
-            float3 h = normalize(wi + wo);
-            
+            float3 wo = reflect(-wi, h);
+            r.direction = wo;
             
             // float3x3 tbn, float3 baseColor, float anisotropic, float roughness, float3 n, float3 wi, float3 wo, float3 h
-            color = evalMetal(hit.mappedTBN, color, 0.0f, hit.roughness, hit.mappedTBN[2], wi, wo, h);
+            float3 f = evalMetal(hit.mappedTBN, color, 0.0f, hit.roughness, hit.mappedTBN[2], wi, wo, h);
+            
+            // float3x3 tbn, float3 wi_world, float3 wo_world, float anisotropic, float roughness
+            float pdf = pdfMetal(hit.mappedTBN, wi, wo, 0.0f, hit.roughness);
+            
+            float cosThetaI = saturate(dot(wi, hit.mappedTBN[2]));
+            
+            color = f * cosThetaI / max(pdf, EPS);
         }
         
         throughput *= color;
@@ -303,5 +313,11 @@ kernel void raytraceMain(acceleration_structure<instancing> as[[buffer(ACC_STRUC
         newColor = (oldColor * frameParams.frameIndex + thisColor) / float(frameParams.frameIndex + 1);
     }
 
+    if (any(isinf(newColor))) {
+        newColor = float4(1, 1, 0, 1);
+    } else if (any(isnan(newColor))) {
+        newColor = float4(1, 0, 0, 1);
+    }
+    
     outTex.write(newColor, gid.xy);
 }

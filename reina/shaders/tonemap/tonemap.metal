@@ -113,7 +113,7 @@ kernel void tonemapMain(texture2d<float, access::read> inTex [[texture(0)]],
     float4 colorSample = inTex.read(gid.xy);
     
     
-#ifdef DEBUG_SHOW_NORMALS
+#ifdef DEBUG_DISABLE_TONEMAPPING
     half4 tonemapped = half4(colorSample);
 #else
     half4 tonemapped = half4(half3(linearToSRGB(agxEotf(float3(colorSample)))), 1.0);

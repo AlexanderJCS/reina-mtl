@@ -68,7 +68,7 @@ void MTLEngine::initDevice() {
 
 void MTLEngine::createBuffers() {
     simd::float4x4 proj = makePerspective(1.57f / 3.0f, float(WIDTH)/float(HEIGHT), 0.01f, 1e6);
-    simd::float4x4 view = lookAt(simd::float3{0, 1, -5}, simd::float3{0, 1, 0}, simd::float3{0, 1, 0});
+    simd::float4x4 view = lookAt(simd::float3{0, 0, -5}, simd::float3{0, 0, 0}, simd::float3{0, 1, 0});
     
     CameraData viewProjBufferContents{
         .invView = simd::inverse(view),
@@ -119,7 +119,7 @@ void MTLEngine::createAccStructs() {
 //    scene->addObject(triangle, white, matrix_identity_float4x4);
 //    scene->addObject(cornell, white, matrix_identity_float4x4);
     scene->addObject(cornellLight, emissive, matrix_identity_float4x4);
-    scene->addObject(ball, textured, matrix_identity_float4x4);
+    scene->addObject(ball, mirror, matrix_identity_float4x4);
     
     auto tex = std::make_shared<Texture>("assets/Leather037_2K-PNG/Leather037_2K-PNG_Color.png", device.get(), MTL::TextureUsageShaderRead, MTL::PixelFormatRGBA8Unorm);
     auto normal = std::make_shared<Texture>("assets/Leather037_2K-PNG/Leather037_2K-PNG_NormalGL.png", device.get(), MTL::TextureUsageShaderRead, MTL::PixelFormatRGBA8Unorm);

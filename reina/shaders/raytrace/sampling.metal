@@ -1,4 +1,5 @@
 #include "sampling.h"
+#include "../../polyglot/shared.hpp"
 
 #include <metal_stdlib>
 using namespace metal;
@@ -80,7 +81,7 @@ float luminance(float3 color) {
 }
 
 float3 evalFm(float3 baseColor, float3 h, float3 wo) {
-    return baseColor + (1 - baseColor) * pow(1 - abs(dot(h, wo)), 5);
+    return baseColor + (1 - baseColor) * pow(1 - saturate(dot(h, wo)), 5);
 }
 
 float evalDm(float3 hl, float alphax, float alphay) {
@@ -122,10 +123,12 @@ float3 evalMetal(float3x3 tbn, float3 baseColor, float anisotropic, float roughn
     float dm = evalDm(hTangent, alphax, alphay);
     float gm = evalGm(wiTangent, woTangent, alphax, alphay);
 
-    float NdotWi = abs(wiTangent.z);
-    float NdotWo = abs(woTangent.z);
+    float NdotWi = saturate(wiTangent.z);
+    float NdotWo = saturate(woTangent.z);
+    
+    if (NdotWi <= 0.0f || NdotWo <= 0.0f) return float3(0.0f);
 
-    return fm * dm * gm / (4.0 * NdotWi * NdotWo);
+    return fm * dm * gm / max((4.0 * NdotWi * NdotWo), EPS);
 }
 
 float3 sampleMetal(float3x3 tbn, float anisotropic, float roughness, float3 wi, thread uint& rngState) {
@@ -141,9 +144,7 @@ float3 sampleMetal(float3x3 tbn, float anisotropic, float roughness, float3 wi, 
 
     // transform h back to world space
     h = normalize(float3(tbn * h));
-    float3 wo = reflect(-wi, h);
-
-    return wo;
+    return h;
 }
 
 float pdfMetal(float3x3 tbn, float3 wi_world, float3 wo_world, float anisotropic, float roughness) {
