@@ -46,6 +46,9 @@ void MTLEngine::run() {
             runRaytrace();
             auto end = std::chrono::steady_clock::now();
             tonemap();
+            
+            tonemapped->save(device.get(), cmdQueue.get(), "test.png");
+            std::cout << "saved\n";
             sendRenderCommand();
             
             std::chrono::duration<double> elapsed = end - start;

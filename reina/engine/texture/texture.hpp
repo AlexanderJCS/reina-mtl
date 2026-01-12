@@ -10,6 +10,8 @@ public:
     Texture(MTL::Device* device, int width, int height, int channels, MTL::PixelFormat pixelFormat, MTL::TextureUsage usage);
     ~Texture();
     
+    void save(MTL::Device* device, MTL::CommandQueue* cmdQueue, const std::string& filename);
+    
     Texture(const Texture&) = delete;
     Texture& operator=(const Texture&) = delete;
     

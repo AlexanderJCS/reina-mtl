@@ -1,5 +1,9 @@
 #include "texture.hpp"
+
 #include <iostream>
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb/stb_image_write.h>
 
 Texture::Texture(const char* filepath, MTL::Device* device, MTL::TextureUsage usage, MTL::PixelFormat format) {
     stbi_set_flip_vertically_on_load(true);
@@ -30,6 +34,44 @@ void Texture::init(MTL::Device* device, MTL::PixelFormat pixelFormat, MTL::Textu
     
     texture = device->newTexture(textureDescriptor);
     textureDescriptor->release();
+}
+
+void Texture::save(MTL::Device* device, MTL::CommandQueue* cmdQueue, const std::string& filename) {
+    const uint32_t bytesPerPixel = 4;  // e.g., RGBA8. Doesn't work with other image types.
+    const uint32_t bytesPerRow = width * bytesPerPixel;
+    const uint32_t dataSize = bytesPerRow * height;
+    
+    MTL::Buffer* readbackBuffer = device->newBuffer(dataSize, MTL::ResourceStorageModeShared);
+    
+    MTL::CommandBuffer* cmdBuffer = cmdQueue->commandBuffer();
+    MTL::BlitCommandEncoder* encoder = cmdBuffer->blitCommandEncoder();
+    
+    encoder->copyFromTexture(
+        texture,
+        0,                      // source slice
+        0,                      // source level
+        MTL::Origin(0, 0, 0),
+        MTL::Size(width, height, 1),
+        readbackBuffer,
+        0,                      // destination offset
+        bytesPerRow,
+        dataSize
+    );
+    
+    encoder->endEncoding();
+    cmdBuffer->commit();
+    cmdBuffer->waitUntilCompleted();
+    
+    stbi_flip_vertically_on_write(1);
+    stbi_write_png(filename.c_str(),
+                  width,
+                  height,
+                  channels,
+                  readbackBuffer->contents(),
+                  bytesPerRow
+                  );
+    
+    readbackBuffer->release();
 }
 
 Texture::~Texture() {
