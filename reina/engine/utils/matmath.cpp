@@ -49,3 +49,10 @@ simd::float4x4 translate(simd::float4x4 mat, const simd::float3& translation) {
     mat.columns[3].xyz = translation;
     return mat;
 }
+
+simd::float4x4 scale(simd::float4x4 mat, const simd::float3& scale) {
+    mat.columns[0][0] = scale.x;
+    mat.columns[1][1] = scale.y;
+    mat.columns[2][2] = scale.z;
+    return mat;
+}

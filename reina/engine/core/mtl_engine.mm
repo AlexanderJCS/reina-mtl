@@ -47,8 +47,8 @@ void MTLEngine::run() {
             auto end = std::chrono::steady_clock::now();
             tonemap();
             
-            tonemapped->save(device.get(), cmdQueue.get(), "test.png");
-            std::cout << "saved\n";
+//            tonemapped->save(device.get(), cmdQueue.get(), "test.png");
+//            std::cout << "saved\n";
             sendRenderCommand();
             
             std::chrono::duration<double> elapsed = end - start;
@@ -120,9 +120,9 @@ void MTLEngine::createAccStructs() {
     std::shared_ptr<Material> emissive = std::make_shared<Material>(0, -1, -1, -1, simd::float3{0.9f, 0.7f, 0.6f}, simd::float3{10, 10, 10}, 0);
 //    scene->addObject(ball, red, matrix_identity_float4x4);
 //    scene->addObject(triangle, white, matrix_identity_float4x4);
-//    scene->addObject(cornell, white, matrix_identity_float4x4);
-    scene->addObject(cornellLight, emissive, matrix_identity_float4x4);
-    scene->addObject(ball, mirror, matrix_identity_float4x4);
+    scene->addObject(cornell, white, translate(matrix_identity_float4x4, simd::float3{0, -1.0f, 0}));
+    scene->addObject(cornellLight, emissive, translate(matrix_identity_float4x4, simd::float3{0, -1.0f, 0}));
+    scene->addObject(ball, mirror, scale(matrix_identity_float4x4, simd::float3(0.33f)));
     
     auto tex = std::make_shared<Texture>("assets/Leather037_2K-PNG/Leather037_2K-PNG_Color.png", device.get(), MTL::TextureUsageShaderRead, MTL::PixelFormatRGBA8Unorm);
     auto normal = std::make_shared<Texture>("assets/Leather037_2K-PNG/Leather037_2K-PNG_NormalGL.png", device.get(), MTL::TextureUsageShaderRead, MTL::PixelFormatRGBA8Unorm);

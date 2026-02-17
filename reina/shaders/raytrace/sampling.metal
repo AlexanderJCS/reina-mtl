@@ -6,6 +6,10 @@ using namespace metal;
 
 #include "random.h"
 
+// ======================
+//          GGX
+// ======================
+
 float3 sampleGGXVNDF(float3 V, float ax, float ay, thread uint& rngState) {
     bool flip = V.z < 0.0;
 
@@ -107,6 +111,10 @@ float evalGm(float3 wi, float3 wo, float alphax, float alphay) {
     return g1 * g2;
 }
 
+// ======================
+//         Metal
+// ======================
+
 float3 evalMetal(float3x3 tbn, float3 baseColor, float anisotropic, float roughness, float3 n, float3 wi, float3 wo, float3 h) {
     const float alphamin = 0.0001;
 
@@ -160,3 +168,5 @@ float pdfMetal(float3x3 tbn, float3 wi_world, float3 wo_world, float anisotropic
 
     return pdfGGXReflection(wiTangent, woTangent, alpha);
 }
+
+
